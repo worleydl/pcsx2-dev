@@ -750,6 +750,8 @@ Pcsx2Config::GSOptions::GSOptions()
 	PreloadFrameWithGSData = false;
 	Mipmap = true;
 	HWMipmap = true;
+	HDRRendering = false;
+	HDROutput = false;
 
 	ManualUserHacks = false;
 	UserHacks_AlignSpriteX = false;
@@ -853,6 +855,10 @@ bool Pcsx2Config::GSOptions::OptionsAreEqual(const GSOptions& right) const
 		OpEqu(ShadeBoost_Contrast) &&
 		OpEqu(ShadeBoost_Saturation) &&
 		OpEqu(ShadeBoost_Gamma) &&
+		OpEqu(ColorCorrect_GameGamma) &&
+		OpEqu(ColorCorrect_GameColorSpace) &&
+		OpEqu(HDR_BrightnessNits) &&
+		OpEqu(HDR_PeakBrightnessNits) &&
 		OpEqu(PNGCompressionLevel) &&
 		OpEqu(SaveDrawStart) &&
 		OpEqu(SaveDrawCount) &&
@@ -893,6 +899,8 @@ bool Pcsx2Config::GSOptions::RestartOptionsAreEqual(const GSOptions& right) cons
 	return OpEqu(Renderer) &&
 		   OpEqu(Adapter) &&
 		   OpEqu(UseDebugDevice) &&
+		   OpEqu(HDRRendering) &&
+		   OpEqu(HDROutput) &&
 		   OpEqu(UseBlitSwapChain) &&
 		   OpEqu(DisableShaderCache) &&
 		   OpEqu(DisableFramebufferFetch) &&
@@ -966,6 +974,8 @@ void Pcsx2Config::GSOptions::LoadSave(SettingsWrapper& wrap)
 	SettingsWrapBitBoolEx(AutoFlushSW, "autoflush_sw");
 	SettingsWrapBitBoolEx(PreloadFrameWithGSData, "preload_frame_with_gs_data");
 	SettingsWrapBitBoolEx(Mipmap, "mipmap");
+	SettingsWrapBitBoolEx(HDRRendering, "hdr");
+	SettingsWrapBitBoolEx(HDROutput, "hdr"); // For now this doesn't have its own separate setting
 	SettingsWrapBitBoolEx(ManualUserHacks, "UserHacks");
 	SettingsWrapBitBoolEx(UserHacks_AlignSpriteX, "UserHacks_align_sprite_X");
 	SettingsWrapIntEnumEx(UserHacks_AutoFlush, "UserHacks_AutoFlushLevel");
@@ -983,6 +993,7 @@ void Pcsx2Config::GSOptions::LoadSave(SettingsWrapper& wrap)
 	SettingsWrapBitBoolEx(UserHacks_EstimateTextureRegion, "UserHacks_EstimateTextureRegion");
 	SettingsWrapBitBoolEx(FXAA, "fxaa");
 	SettingsWrapBitBool(ShadeBoost);
+	SettingsWrapBitBool(ColorCorrect);
 	SettingsWrapBitBoolEx(DumpGSData, "DumpGSData");
 	SettingsWrapBitBoolEx(SaveRT, "SaveRT");
 	SettingsWrapBitBoolEx(SaveFrame, "SaveFrame");
@@ -1048,6 +1059,10 @@ void Pcsx2Config::GSOptions::LoadSave(SettingsWrapper& wrap)
 	SettingsWrapBitfield(ShadeBoost_Contrast);
 	SettingsWrapBitfield(ShadeBoost_Saturation);
 	SettingsWrapBitfield(ShadeBoost_Gamma);
+	SettingsWrapEntry(ColorCorrect_GameGamma);
+	SettingsWrapIntEnumEx(ColorCorrect_GameColorSpace, "ColorCorrect_GameColorSpace");
+	SettingsWrapEntry(HDR_BrightnessNits);
+	SettingsWrapEntry(HDR_PeakBrightnessNits);
 	SettingsWrapBitfield(ExclusiveFullscreenControl);
 	SettingsWrapBitfieldEx(PNGCompressionLevel, "png_compression_level");
 	SettingsWrapBitfieldEx(SaveDrawStart, "SaveDrawStart");
@@ -2068,6 +2083,8 @@ void Pcsx2Config::CopyRuntimeConfig(Pcsx2Config& cfg)
 	CurrentGameArgs = std::move(cfg.CurrentGameArgs);
 	CurrentAspectRatio = cfg.CurrentAspectRatio;
 	CurrentCustomAspectRatio = cfg.CurrentCustomAspectRatio;
+	HDRRendering = cfg.HDRRendering;
+	HDROutput = cfg.HDROutput;
 	IsPortableMode = cfg.IsPortableMode;
 
 	for (u32 i = 0; i < sizeof(Mcd) / sizeof(Mcd[0]); i++)

@@ -414,7 +414,7 @@ bool GSDeviceOGL::Create(GSVSyncMode vsync_mode, bool allow_present_throttle)
 			m_present[i].RegisterUniform("u_rcp_target_resolution");
 			m_present[i].RegisterUniform("u_source_resolution");
 			m_present[i].RegisterUniform("u_rcp_source_resolution");
-			m_present[i].RegisterUniform("u_time");
+			m_present[i].RegisterUniform("u_time_and_brightness");
 		}
 	}
 
@@ -467,7 +467,7 @@ bool GSDeviceOGL::Create(GSVSyncMode vsync_mode, bool allow_present_throttle)
 	// ****************************************************************
 	// Post processing
 	// ****************************************************************
-	if (!CompileShadeBoostProgram() || !CompileFXAAProgram())
+	if (!CompileColorCorrectProgram() || !CompileFXAAProgram())
 		return false;
 
 	// Image load store and GLSL 420pack is core in GL4.2, no need to check.
@@ -813,7 +813,7 @@ void GSDeviceOGL::DestroyResources()
 	m_cas.upscale_ps.Destroy();
 	m_cas.sharpen_ps.Destroy();
 
-	m_shadeboost.ps.Destroy();
+	m_colorcorrect.ps.Destroy();
 
 	for (GLProgram& prog : m_date.primid_ps)
 		prog.Destroy();
@@ -1547,6 +1547,7 @@ void GSDeviceOGL::PresentRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 	cb.SetSource(sRect, sTex->GetSize());
 	cb.SetTarget(dRect, ds);
 	cb.SetTime(shaderTime);
+	cb.SetBrightness(EmuConfig.HDROutput ? (GSConfig.HDR_BrightnessNits / Pcsx2Config::GSOptions::DEFAULT_SRGB_BRIGHTNESS_NITS) : 1.f);
 
 	GLProgram& prog = m_present[static_cast<int>(shader)];
 	prog.Bind();
@@ -1558,7 +1559,7 @@ void GSDeviceOGL::PresentRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 	prog.Uniform2fv(5, &cb.RcpTargetResolution.x);
 	prog.Uniform2fv(6, &cb.SourceResolution.x);
 	prog.Uniform2fv(7, &cb.RcpSourceResolution.x);
-	prog.Uniform1f(8, cb.TimeAndPad.x);
+	prog.Uniform2fv(8, &cb.TimeAndBrightnessAndPad.x);
 
 	OMSetDepthStencilState(m_convert.dss);
 	OMSetBlendState(false);
@@ -1876,29 +1877,31 @@ void GSDeviceOGL::DoFXAA(GSTexture* sTex, GSTexture* dTex)
 	StretchRect(sTex, sRect, dTex, dRect, m_fxaa.ps, true);
 }
 
-bool GSDeviceOGL::CompileShadeBoostProgram()
+bool GSDeviceOGL::CompileColorCorrectProgram()
 {
-	const std::optional<std::string> shader = ReadShaderSource("shaders/opengl/shadeboost.glsl");
+	const std::optional<std::string> shader = ReadShaderSource("shaders/opengl/colorcorrect.glsl");
 	if (!shader.has_value())
 	{
-		Host::ReportErrorAsync("GS", "Failed to read shaders/opengl/shadeboost.glsl.");
+		Host::ReportErrorAsync("GS", "Failed to read shaders/opengl/colorcorrect.glsl.");
 		return false;
 	}
 
 	const std::string ps(GetShaderSource("ps_main", GL_FRAGMENT_SHADER, *shader));
-	if (!m_shader_cache.GetProgram(&m_shadeboost.ps, m_convert.vs, ps))
+	if (!m_shader_cache.GetProgram(&m_colorcorrect.ps, m_convert.vs, ps))
 		return false;
-	m_shadeboost.ps.RegisterUniform("params");
-	m_shadeboost.ps.SetName("Shadeboost pipe");
+	m_colorcorrect.ps.RegisterUniform("correction");
+	m_colorcorrect.ps.RegisterUniform("adjustment");
+	m_colorcorrect.ps.SetName("ColorCorrect pipe");
 	return true;
 }
 
-void GSDeviceOGL::DoShadeBoost(GSTexture* sTex, GSTexture* dTex, const float params[4])
+void GSDeviceOGL::DoColorCorrect(GSTexture* sTex, GSTexture* dTex, const ColorCorrectConstantBuffer& cb)
 {
-	GL_PUSH("DoShadeBoost");
+	GL_PUSH("DoColorCorrect");
 
-	m_shadeboost.ps.Bind();
-	m_shadeboost.ps.Uniform4fv(0, params);
+	m_colorcorrect.ps.Bind();
+	m_colorcorrect.ps.Uniform4fv(0, &cb.correction.x);
+	m_colorcorrect.ps.Uniform4fv(1, &cb.adjustment.x);
 
 	OMSetColorMaskState();
 
@@ -1907,7 +1910,7 @@ void GSDeviceOGL::DoShadeBoost(GSTexture* sTex, GSTexture* dTex, const float par
 	const GSVector4 sRect(0, 0, 1, 1);
 	const GSVector4 dRect(0, 0, s.x, s.y);
 
-	StretchRect(sTex, sRect, dTex, dRect, m_shadeboost.ps, false);
+	StretchRect(sTex, sRect, dTex, dRect, m_colorcorrect.ps, false);
 }
 
 void GSDeviceOGL::SetupDATE(GSTexture* rt, GSTexture* ds, const GSVertexPT1* vertices, SetDATM datm)
