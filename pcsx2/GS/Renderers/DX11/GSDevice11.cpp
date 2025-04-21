@@ -1398,7 +1398,7 @@ void GSDevice11::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 	// ps
 
 	PSSetShaderResource(0, sTex);
-	PSSetSamplerState(linear ? m_convert.ln.get() : m_convert.pt.get());
+	PSSetSamplerState(0, linear ? m_convert.ln.get() : m_convert.pt.get());
 	PSSetShader(ps, ps_cb);
 
 	// draw
@@ -1473,7 +1473,7 @@ void GSDevice11::PresentRect(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 	// ps
 
 	PSSetShaderResource(0, sTex);
-	PSSetSamplerState(linear ? m_convert.ln.get() : m_convert.pt.get());
+	PSSetSamplerState(0, linear ? m_convert.ln.get() : m_convert.pt.get());
 	PSSetShader(m_present.ps[static_cast<u32>(shader)].get(), m_present.ps_cb.get());
 
 	// draw
@@ -1614,7 +1614,7 @@ void GSDevice11::DoMultiStretchRects(const MultiStretchRect* rects, u32 num_rect
 
 	CommitClear(rects[0].src);
 	PSSetShaderResource(0, rects[0].src);
-	PSSetSamplerState(rects[0].linear ? m_convert.ln.get() : m_convert.pt.get());
+	PSSetSamplerState(0, rects[0].linear ? m_convert.ln.get() : m_convert.pt.get());
 
 	OMSetBlendState(m_convert.bs[rects[0].wmask.wrgba].get(), 0.0f);
 
@@ -1900,7 +1900,9 @@ void GSDevice11::SetupPS(const PSSelector& sel, const GSHWDrawConfig::PSConstant
 		}
 	}
 
-	PSSetSamplerState(ss0.get());
+	PSSetSamplerState(0, ss0.get());
+	// Forced linear sampler (for HDR LUT/palette sampling)
+	PSSetSamplerState(1, m_convert.ln.get());
 
 	PSSetShader(i->second.get(), m_ps_cb.get());
 }
@@ -2193,7 +2195,7 @@ void GSDevice11::RenderImGui()
 	PSSetShader(m_imgui.ps.get(), m_imgui.cb.get());
 	OMSetBlendState(m_imgui.bs.get(), 0.0f);
 	OMSetDepthStencilState(m_convert.dss.get(), 0);
-	PSSetSamplerState(m_convert.ln.get());
+	PSSetSamplerState(0, m_convert.ln.get());
 
 	// Render command lists
 	for (int n = 0; n < draw_data->CmdListsCount; n++)
@@ -2294,7 +2296,7 @@ void GSDevice11::SetupDATE(GSTexture* rt, GSTexture* ds, const GSVertexPT1* vert
 	// ps
 
 	PSSetShaderResource(0, rt);
-	PSSetSamplerState(m_convert.pt.get());
+	PSSetSamplerState(0, m_convert.pt.get());
 	PSSetShader(m_convert.ps[SetDATMShader(datm)].get(), nullptr);
 
 	// draw
@@ -2481,9 +2483,9 @@ void GSDevice11::PSSetShaderResource(int i, GSTexture* sr)
 	m_state.ps_sr_views[i] = *static_cast<GSTexture11*>(sr);
 }
 
-void GSDevice11::PSSetSamplerState(ID3D11SamplerState* ss0)
+void GSDevice11::PSSetSamplerState(int i, ID3D11SamplerState* ss)
 {
-	m_state.ps_ss[0] = ss0;
+	m_state.ps_ss[i] = ss;
 }
 
 void GSDevice11::ClearSamplerCache()
@@ -2927,6 +2929,7 @@ void GSDevice11::RenderHW(GSHWDrawConfig& config)
 	{
 		PSSetShaderResource(3, nullptr);
 	}
+	PSSetSamplerState(1, nullptr);
 #endif
 
 	if (colclip_rt)

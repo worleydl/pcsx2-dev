@@ -5,6 +5,13 @@
 #define PS_HDR 0
 #endif
 
+#if PS_HDR
+//#define NEUTRAL_ALPHA 127.5f
+#define NEUTRAL_ALPHA 128.0f
+#else
+#define NEUTRAL_ALPHA 128.0f
+#endif
+
 struct VS_INPUT
 {
 	float4 p : POSITION;
@@ -129,6 +136,7 @@ void ps_datm1_rta_correction(PS_INPUT input)
 	clip(sample_c(input.t).a - 254.5f / 255); // >= 0x80 pass
 }
 
+//TODO: these in HDR?
 void ps_datm0_rta_correction(PS_INPUT input)
 {
 	clip(254.5f / 255 - sample_c(input.t).a); // < 0x80 pass (== 0x80 should not pass)
@@ -138,10 +146,14 @@ PS_OUTPUT ps_rta_correction(PS_INPUT input)
 {
 	PS_OUTPUT output;
 	float4 value = sample_c(input.t);
-#if 1 //TODO: saturate this and the above+below ones too? I was suggested to not to
+#if PS_HDR && 0 //TODO: saturate this and the above+below ones too? I was suggested to not to. Anyway this is not needed until proven otherwise.
 	value.a = saturate(value.a);
 #endif
-	output.c = float4(value.rgb, value.a * (255.0f / 128.25f));
+#if PS_HDR
+	output.c = float4(value.rgb, value.a * (255.0f / NEUTRAL_ALPHA));
+#else
+	output.c = float4(value.rgb, value.a * (255.0f / (NEUTRAL_ALPHA + 0.25f)));
+#endif
 	return output;
 }
 
@@ -149,10 +161,14 @@ PS_OUTPUT ps_rta_decorrection(PS_INPUT input)
 {
 	PS_OUTPUT output;
 	float4 value = sample_c(input.t);
-#if 1
+#if PS_HDR && 0
 	value.a = saturate(value.a);
 #endif
-	output.c = float4(value.rgb, value.a * (128.25f / 255.0f));
+#if PS_HDR
+	output.c = float4(value.rgb, value.a * (NEUTRAL_ALPHA / 255.0f));
+#else
+	output.c = float4(value.rgb, value.a * ((NEUTRAL_ALPHA + 0.25f) / 255.0f));
+#endif
 	return output;
 }
 
@@ -572,6 +588,7 @@ PS_OUTPUT ps_yuv(PS_INPUT input)
 	return output;
 }
 
+//TODO: these in HDR?
 float ps_stencil_image_init_0(PS_INPUT input) : SV_Target
 {
 	float c;
@@ -592,6 +609,7 @@ float ps_stencil_image_init_1(PS_INPUT input) : SV_Target
 	return c;
 }
 
+//TODO: these in HDR?
 float ps_stencil_image_init_2(PS_INPUT input)
 	: SV_Target
 {
