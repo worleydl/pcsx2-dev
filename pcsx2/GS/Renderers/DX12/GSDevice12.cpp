@@ -1281,19 +1281,11 @@ void GSDevice12::DrawIndexedPrimitive(int offset, int count)
 void GSDevice12::LookupNativeFormat(GSTexture::Format format, DXGI_FORMAT* d3d_format, DXGI_FORMAT* srv_format,
 	DXGI_FORMAT* rtv_format, DXGI_FORMAT* dsv_format, GSTexture::Type type) const
 {
-#if OLD_HDR
-	static constexpr std::array<std::array<DXGI_FORMAT, 4>, static_cast<int>(GSTexture::Format::Last) + 2>
-#else
 	static constexpr std::array<std::array<DXGI_FORMAT, 4>, static_cast<int>(GSTexture::Format::Last) + 1>
-#endif
 		s_format_mapping = {{
 			{DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN}, // Invalid
 			{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM,
 				DXGI_FORMAT_UNKNOWN}, // Color
-#if OLD_HDR
-			{DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R16G16B16A16_FLOAT,
-				DXGI_FORMAT_UNKNOWN}, // Color (upgraded to HDR)
-#endif
 			{DXGI_FORMAT_R10G10B10A2_UNORM, DXGI_FORMAT_R10G10B10A2_UNORM, DXGI_FORMAT_R10G10B10A2_UNORM,
 				DXGI_FORMAT_UNKNOWN}, // ColorHQ
 			{DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R16G16B16A16_FLOAT,
@@ -1311,13 +1303,6 @@ void GSDevice12::LookupNativeFormat(GSTexture::Format format, DXGI_FORMAT* d3d_f
 			{DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN}, // BC3
 			{DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN}, // BC7
 		}};
-
-#if OLD_HDR
-	if ((EmuConfig.HDRRendering && (type == GSTexture::Type::RenderTarget || type == GSTexture::Type::RWTexture)) ? format >= GSTexture::Format::Color : format > GSTexture::Format::Color)
-	{
-		format = (GSTexture::Format)((u8)format + 1);
-	}
-#endif
 
 	const auto& mapping = s_format_mapping[static_cast<int>(format)];
 	if (d3d_format)

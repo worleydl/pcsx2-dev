@@ -1226,18 +1226,6 @@ GSTexture* GSDevice11::CreateSurface(GSTexture::Type type, int width, int height
 			break;
 	}
 
-#if OLD_HDR // Add RT to allow textures of different formats to be copied in it
-	if (format == GSTexture::Format::Color)
-	{
-		switch (type)
-		{
-			case GSTexture::Type::Texture:
-			case GSTexture::Type::RWTexture:
-				desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-		}
-	}
-#endif
-
 	wil::com_ptr_nothrow<ID3D11Texture2D> texture;
 	HRESULT hr = m_dev->CreateTexture2D(&desc, nullptr, texture.put());
 	if (FAILED(hr))
@@ -1353,9 +1341,7 @@ void GSDevice11::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 			OMSetRenderTargets(nullptr, dTex);
 		else
 			OMSetRenderTargets(dTex, nullptr);
-#if !OLD_HDR
 		pxAssert(dTex->IsRenderTargetOrDepthStencil());
-#endif
 	}
 	else
 	{
