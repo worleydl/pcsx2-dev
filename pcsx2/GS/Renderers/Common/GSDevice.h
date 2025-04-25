@@ -270,6 +270,7 @@ enum HWBlendFlags
 	BLEND_ACCU   = 0x2000, // Allow to use a mix of SW and HW blending to keep the best of the 2 worlds
 	BLEND_NO_REC = 0x4000, // Doesn't require sampling of the RT as a texture
 	BLEND_A_MAX  = 0x8000, // Impossible blending uses coeff bigger than 1
+	BLEND_NEG    = 0x1000, // The blend is "subtractive" and risks resulting in colors below 0
 };
 
 // Determines the HW blend function for the video backend
@@ -384,6 +385,7 @@ struct alignas(16) GSHWDrawConfig
 				u32 pabe           : 1;
 				u32 no_color       : 1; // disables color output entirely (depth only)
 				u32 no_color1      : 1; // disables second color output (when unnecessary)
+				u32 hdr_mode       : 2; // 0 SDR (default), 1 HDR (range only, quantized to 8 bits), 2 HDR (only alpha quantized to 8 bit), 3 HDR (no quantization)
 
 				// Others ways to fetch the texture
 				u32 channel : 3;
