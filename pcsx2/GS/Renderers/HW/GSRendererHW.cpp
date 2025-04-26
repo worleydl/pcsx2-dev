@@ -7000,8 +7000,8 @@ __ri void GSRendererHW::HandleTextureHazards(const GSTextureCache::Target* rt, c
 	}
 	
 	const GSVector4 src_rect = GSVector4(scaled_copy_range) / GSVector4(src_target->m_texture->GetSize()).xyxy();
-	//const GSVector4 dst_rect = GSVector4((float)scaled_copy_dst_offset.x, (float)scaled_copy_dst_offset.y, scaled_copy_dst_offset.x + (scaled_copy_range.width() * ((float)src_copy->GetSize().x / (float)src_target->m_texture->GetSize().x)), scaled_copy_dst_offset.y + (scaled_copy_range.height() * ((float)src_copy->GetSize().y / (float)src_target->m_texture->GetSize().y)));
-	const GSVector4 dst_rect = GSVector4(scaled_copy_range - scaled_copy_range.xyxy() + GSVector4i(scaled_copy_dst_offset).xyxy());
+	const GSVector4 dst_rect = GSVector4((float)scaled_copy_dst_offset.x, (float)scaled_copy_dst_offset.y, scaled_copy_dst_offset.x + (scaled_copy_range.width() * ((float)src_copy->GetSize().x / (float)src_target->m_texture->GetSize().x)), scaled_copy_dst_offset.y + (scaled_copy_range.height() * ((float)src_copy->GetSize().y / (float)src_target->m_texture->GetSize().y)));
+	//const GSVector4 dst_rect = GSVector4(scaled_copy_range - scaled_copy_range.xyxy() + GSVector4i(scaled_copy_dst_offset).xyxy());
 	const GSVector4i equal_size_vec = (scaled_copy_range.zwzw() - scaled_copy_range.xyxy()) == GSVector4i(dst_rect.zwzw() - dst_rect.xyxy() + 0.5f);
 	const bool equal_size = equal_size_vec.x != 0 && equal_size_vec.y != 0; //TODO1
 	
@@ -7034,12 +7034,12 @@ __ri void GSRendererHW::HandleTextureHazards(const GSTextureCache::Target* rt, c
 			g_gs_device->FilteredDownsampleTexture(src_target->m_texture, src_copy.get(), downsample_factor, clamp_min, dRect);
 		}
 	}
-	else if ((src_target->m_texture->GetFormat() != src_copy->GetFormat() || !equal_size) /*&& src_copy->IsRenderTargetOrDepthStencil()*/) //TODO1
+	else if ((src_target->m_texture->GetFormat() != src_copy->GetFormat() /*|| !equal_size*/) /*&& src_copy->IsRenderTargetOrDepthStencil()*/) //TODO1
 	{
 		pxAssert(src_copy->IsRenderTargetOrDepthStencil());
 		g_gs_device->StretchRect(src_target->m_texture, src_rect, src_copy.get(), dst_rect, ShaderConvert::COPY, !equal_size);
 	}
-	else if (equal_size) // CopyRect() might crash if the target size is out of bound //TODO1
+	else //if (equal_size) // CopyRect() might crash if the target size is out of bound //TODO1
 	{
 		g_perfmon.Put(GSPerfMon::TextureCopies, 1);
 		const GSVector4i offset = copy_range - GSVector4i(copy_dst_offset).xyxy();
@@ -7057,9 +7057,9 @@ __ri void GSRendererHW::HandleTextureHazards(const GSTextureCache::Target* rt, c
 		g_gs_device->StretchRect(src_target->m_texture, src_rect, src_copy.get(), dst_rect,
 			src_target->m_texture->IsDepthStencil() ? ShaderConvert::DEPTH_COPY : ShaderConvert::COPY, false);
 	}
-	else
+	//else
 	{
-		pxAssert(false); // This shouldn't happen!
+		//pxAssert(false); // This shouldn't happen!
 	}
 	m_conf.tex = src_copy.get();
 }
