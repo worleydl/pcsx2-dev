@@ -101,9 +101,8 @@ set(BinLibs
 	${PCSX2_DIR}/3rdparty/d3d12memalloc/D3D12MemAlloc.lib
 	${PCSX2_DIR}/3rdparty/demangler/demanglegnu.lib
 	${PCSX2_DIR}/3rdparty/discord-rpc/discord-rpc.lib
-	${PCSX2_DIR}/3rdparty/fmt/fmtd.lib # Needs config for release/debug
+	${PCSX2_DIR}/3rdparty/fmt/fmt.lib # Needs swap config for release/debug
 	${PCSX2_DIR}/3rdparty/freesurround/freesurround.lib
-	${PCSX2_DIR}/3rdparty/glad/glad.lib
 	${PCSX2_DIR}/3rdparty/imgui/imgui.lib
 	${PCSX2_DIR}/3rdparty/libchdr/libchdr.lib
 	${PCSX2_DIR}/3rdparty/libzip/zip.lib
