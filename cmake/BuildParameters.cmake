@@ -11,6 +11,7 @@ option(ENABLE_GSRUNNER "Enables building the GSRunner by default.  It can still 
 option(LTO_PCSX2_CORE "Enable LTO/IPO/LTCG on the subset of pcsx2 that benefits most from it but not anything else")
 option(USE_VTUNE "Plug VTUNE to profile GS JIT.")
 option(PACKAGE_MODE "Use this option to ease packaging of PCSX2 (developer/distribution option)")
+option(UWP_BUILD "Only build static libs, launch via external cmake project." OFF)
 
 #-------------------------------------------------------------------------------
 # Graphical option
@@ -18,7 +19,10 @@ option(PACKAGE_MODE "Use this option to ease packaging of PCSX2 (developer/distr
 if(NOT APPLE)
 	option(USE_OPENGL "Enable OpenGL GS renderer" ON)
 endif()
-option(USE_VULKAN "Enable Vulkan GS renderer" ON)
+
+if(NOT UWP_BUILD)
+	option(USE_VULKAN "Enable Vulkan GS renderer" ON)
+endif()
 
 #-------------------------------------------------------------------------------
 # Path and lib option

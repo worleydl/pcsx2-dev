@@ -47,7 +47,10 @@ add_subdirectory(common)
 
 # make pcsx2
 add_subdirectory(pcsx2)
-add_subdirectory(pcsx2-qt)
+
+if (NOT UWP_BUILD)
+	add_subdirectory(pcsx2-qt)
+endif()
 
 # Updater is Windows only for now.
 if (WIN32)

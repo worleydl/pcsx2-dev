@@ -116,8 +116,10 @@ std::unique_ptr<AudioStream> AudioStream::CreateStream(AudioBackend backend, u32
 		case AudioBackend::Cubeb:
 			return CreateCubebAudioStream(sample_rate, parameters, driver_name, device_name, stretch_enabled, error);
 
+#ifndef _UWP
 		case AudioBackend::SDL:
 			return CreateSDLAudioStream(sample_rate, parameters, stretch_enabled, error);
+#endif
 
 		case AudioBackend::Null:
 			return CreateNullStream(sample_rate, parameters.buffer_ms);
@@ -148,7 +150,9 @@ u32 AudioStream::GetMSForBufferSize(u32 sample_rate, u32 buffer_size)
 static constexpr const std::array s_backend_names = {
 	"Null",
 	"Cubeb",
+#ifndef _UWP
 	"SDL",
+#endif
 };
 static constexpr const std::array s_backend_display_names = {
 	TRANSLATE_NOOP("AudioStream", "Null (No Output)"),
