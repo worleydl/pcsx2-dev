@@ -150,9 +150,6 @@ set(BinLibs
 	dxgi.lib
 
 	# Other System
-	dwmapi.lib
-	opengl32.lib # Not used currently, should be preproc'd out eventually
-	ws2_32.lib
 	OneCore.lib
 	WindowsApp.lib
 )
