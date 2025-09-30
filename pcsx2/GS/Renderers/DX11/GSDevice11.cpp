@@ -502,8 +502,10 @@ bool GSDevice11::Create(GSVSyncMode vsync_mode, bool allow_present_throttle)
 			return false;
 	}
 
+#ifndef _UWP
 	if (m_features.cas_sharpening && !CreateCASShaders())
 		return false;
+#endif
 
 	if (!CreateImGuiResources())
 		return false;
@@ -659,6 +661,7 @@ bool GSDevice11::CreateSwapChain()
 	if (m_window_info.type != WindowInfo::Type::Win32)
 		return false;
 
+#ifndef _UWP
 	const HWND window_hwnd = reinterpret_cast<HWND>(m_window_info.window_handle);
 	RECT client_rc{};
 	GetClientRect(window_hwnd, &client_rc);
@@ -687,11 +690,18 @@ bool GSDevice11::CreateSwapChain()
 		m_is_exclusive_fullscreen = false;
 	}
 
+	u32 surface_width = static_cast<u32>(client_rc.right - client_rc.left);
+	u32 surface_height = static_cast<u32>(client_rc.right - client_rc.left);
+#else
+	u32 surface_width = m_window_info.surface_width;
+	u32 surface_height = m_window_info.surface_height;
+#endif
+
 	m_using_flip_model_swap_chain = !GSConfig.UseBlitSwapChain || m_is_exclusive_fullscreen;
 
 	DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = {};
-	swap_chain_desc.Width = static_cast<u32>(client_rc.right - client_rc.left);
-	swap_chain_desc.Height = static_cast<u32>(client_rc.bottom - client_rc.top);
+	swap_chain_desc.Width = surface_width;
+	swap_chain_desc.Height = surface_height;
 	swap_chain_desc.Format = swap_chain_format;
 	swap_chain_desc.SampleDesc.Count = 1;
 	swap_chain_desc.BufferCount = GetSwapChainBufferCount();
@@ -705,6 +715,7 @@ bool GSDevice11::CreateSwapChain()
 
 	HRESULT hr = S_OK;
 
+#ifndef _UWP
 	if (m_is_exclusive_fullscreen)
 	{
 		DXGI_SWAP_CHAIN_DESC1 fs_sd_desc = swap_chain_desc;
@@ -766,7 +777,11 @@ bool GSDevice11::CreateSwapChain()
 	else
 	{
 		Console.ErrorFmt("D3D11: GetParent() on swap chain to get factory failed: {}", Error::CreateHResult(hr).GetDescription());
-	}	
+	}
+#else
+	Console.WriteLn("Creating a %dx%d winrt swap chain", swap_chain_desc.Width, swap_chain_desc.Height);
+	hr = m_dxgi_factory->CreateSwapChainForCoreWindow(m_dev.get(), static_cast<::IUnknown*>(m_window_info.surface_handle), &swap_chain_desc, nullptr, m_swap_chain.put());
+#endif
 
 	if (!CreateSwapChainRTV())
 	{

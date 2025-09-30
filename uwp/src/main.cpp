@@ -638,9 +638,11 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 			MTGS::WaitForOpen();
 		}
 
+		VMManager::ReloadInputSources();
+
 		window.Dispatcher().RunAsync(CoreDispatcherPriority::Normal, []() {
 			Sleep(500);
-			//InputManager::ReloadDevices();
+			InputManager::ReloadDevices();
 		});
 
 		while (s_running)
@@ -679,7 +681,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 			else
 			{
 				WinRTHost::ProcessEventQueue();
-				//InputManager::PollSources();
+				InputManager::PollSources();
 			}
 
 			Sleep(1);
