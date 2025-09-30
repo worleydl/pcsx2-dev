@@ -22,6 +22,8 @@ endif()
 
 if(NOT UWP_BUILD)
 	option(USE_VULKAN "Enable Vulkan GS renderer" ON)
+else()
+	add_compile_definitions(_UWP)
 endif()
 
 #-------------------------------------------------------------------------------
