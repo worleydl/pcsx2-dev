@@ -395,7 +395,6 @@ set(pcsx2USBSources
 	USB/usb-pad/usb-gametrak.cpp
 	USB/usb-pad/usb-realplay.cpp
 	USB/usb-pad/usb-pad-ff.cpp
-	USB/usb-pad/usb-pad-sdl-ff.cpp
 	USB/usb-pad/usb-pad.cpp
 	USB/usb-pad/usb-seamic.cpp
 	USB/usb-pad/usb-train.cpp
@@ -862,6 +861,7 @@ if (NOT UWP_BUILD)
 	list(APPEND pcsx2HostSources  Host/SDLAudioStream.cpp)
 	list(APPEND pcsx2InputSources Input/SDLInputSource.cpp)
 	list(APPEND pcsx2InputHeaders Input/SDLInputSource.h)
+	list(APPEND pcsx2USBSources   USB/usb-pad/usb-pad-sdl-ff.cpp)
 endif()
 
 if(APPLE)
@@ -1132,9 +1132,7 @@ if(WIN32)
 	)
 endif()
 
-if (NOT UWP_BUILD)
-	target_sources(PCSX2 PRIVATE ${pcsx2USBSources} ${pcsx2USBHeaders})
-endif()
+target_sources(PCSX2 PRIVATE ${pcsx2USBSources} ${pcsx2USBHeaders})
 
 if(APPLE OR BSD)
 	if(APPLE)
