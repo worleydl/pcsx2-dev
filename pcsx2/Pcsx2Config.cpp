@@ -24,6 +24,10 @@
 #include <ShlObj.h>
 #endif
 
+#ifdef _UWP
+#include "../uwp/src/UWPUtils.h"
+#endif
+
 // This macro is actually useful for about any and every possible application of C++ equality operators.
 // Stuck here because of legacy code, new code shouldn't rely on it, it's difficult to read.
 #define OpEqu(field) (field == right.field)
@@ -2199,7 +2203,10 @@ bool EmuFolders::SetDataDirectory(Error* error)
 {
 	if (!ShouldUsePortableMode())
 	{
-#if defined(_WIN32)
+
+#if defined(_UWP)
+		EmuFolders::DataRoot = UWP::GetLocalFolder();
+#elif defined(_WIN32)
 		// On Windows, use My Documents\PCSX2 to match old installs.
 		PWSTR documents_directory;
 		if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &documents_directory)))

@@ -387,6 +387,7 @@ TinyString XInputSource::ConvertKeyToIcon(InputBindingKey key)
 {
 	TinyString ret;
 
+#ifndef _UWP
 	if (key.source_type == InputSourceType::SDL)
 	{
 		if (key.source_subtype == InputSubclass::ControllerAxis)
@@ -403,6 +404,7 @@ TinyString XInputSource::ConvertKeyToIcon(InputBindingKey key)
 				ret.format("XInput-{}  {}", static_cast<u32>(key.source_index), s_button_icons[key.data]);
 		}
 	}
+#endif
 
 	return ret;
 }
