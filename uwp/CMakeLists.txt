@@ -71,6 +71,28 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${PCSX2_DIR}/../3rdparty/simpleini/include
 )
 
+
+# Setup data deployment
+file(GLOB_RECURSE DATA_FILES
+        RELATIVE ${CMAKE_SOURCE_DIR}/../bin
+        ${CMAKE_SOURCE_DIR}/../bin/resources/*
+)
+
+foreach(ASSET ${DATA_FILES})
+        set(FULL_PATH "${CMAKE_SOURCE_DIR}/../bin/${ASSET}")
+
+        get_filename_component(DEST_DIR ${ASSET} DIRECTORY)
+
+        set_source_files_properties("${FULL_PATH}" PROPERTIES
+                VS_COPY_TO_OUT_DIR Always
+                VS_DEPLOYMENT_CONTENT TRUE
+                VS_DEPLOYMENT_LOCATION "${DEST_DIR}" # preserves folder structure
+        )
+
+        target_sources(${PROJECT_NAME} PRIVATE "${FULL_PATH}")
+        source_group("BinData" FILES "${FULL_PATH}")
+endforeach()
+
 set(BinLibs
 	# 3rd party
 	${PCSX2_DIR}/3rdparty/ccc/ccc.lib
