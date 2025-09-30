@@ -42,10 +42,6 @@ if(USE_LINKED_FFMPEG)
 	target_link_libraries(PCSX2_FLAGS INTERFACE FFMPEG::avcodec FFMPEG::avformat FFMPEG::avutil FFMPEG::swscale FFMPEG::swresample)
 endif()
 
-if(UWP_BUILD)
-	target_compile_definitions(PCSX2_FLAGS INTERFACE _UWP)
-endif()
-
 if(WIN32)
 	set(MIN_WIN32 0x0A00)
 	target_compile_definitions(PCSX2_FLAGS INTERFACE
