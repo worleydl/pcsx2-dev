@@ -682,9 +682,13 @@ InputBindingKey InputManager::MakePointerAxisKey(u32 index, InputPointerAxis axi
 static std::array<const char*, static_cast<u32>(InputSourceType::Count)> s_input_class_names = {{
 	"Keyboard",
 	"Mouse",
+#ifndef _UWP
 	"SDL",
+#endif
 #ifdef _WIN32
+#ifndef _UWP
 	"DInput",
+#endif
 	"XInput",
 #endif
 }};
@@ -705,7 +709,9 @@ bool InputManager::GetInputSourceDefaultEnabled(InputSourceType type)
 	{
 		case InputSourceType::Keyboard:
 		case InputSourceType::Pointer:
+#ifndef _UWP
 		case InputSourceType::SDL:
+#endif
 			return true;
 
 #ifdef _WIN32
@@ -1261,12 +1267,14 @@ bool InputManager::PreprocessEvent(InputBindingKey key, float value, GenericInpu
 		if (ImGuiManager::ProcessPointerButtonEvent(key, value))
 			return true;
 	}
+#ifndef _UWP
 	else if (generic_key != GenericInputBinding::Unknown)
 	{
 		InputLayout layout = s_input_sources[static_cast<u32>(InputSourceType::SDL)]->GetControllerLayout(key.source_index);
 		if (ImGuiManager::ProcessGenericInputEvent(generic_key, layout, value) && value != 0.0f)
 			return true;
 	}
+#endif
 
 	return false;
 }
@@ -1774,18 +1782,26 @@ void InputManager::UpdateInputSourceState(SettingsInterface& si, std::unique_loc
 	}
 }
 
+#ifndef _UWP
 #include "Input/SDLInputSource.h"
+#endif
 
 #ifdef _WIN32
+#ifndef _UWP
 #include "Input/DInputSource.h"
+#endif
 #include "Input/XInputSource.h"
 #endif
 
 void InputManager::ReloadSources(SettingsInterface& si, std::unique_lock<std::mutex>& settings_lock)
 {
+#ifndef _UWP
 	UpdateInputSourceState<SDLInputSource>(si, settings_lock, InputSourceType::SDL);
+#endif
 #ifdef _WIN32
+#ifndef _UWP
 	UpdateInputSourceState<DInputSource>(si, settings_lock, InputSourceType::DInput);
+#endif
 	UpdateInputSourceState<XInputSource>(si, settings_lock, InputSourceType::XInput);
 #endif
 }

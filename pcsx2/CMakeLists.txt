@@ -41,6 +41,10 @@ if(USE_LINKED_FFMPEG)
 	target_link_libraries(PCSX2_FLAGS INTERFACE FFMPEG::avcodec FFMPEG::avformat FFMPEG::avutil FFMPEG::swscale FFMPEG::swresample)
 endif()
 
+if(UWP_BUILD)
+	target_compile_definitions(PCSX2_FLAGS INTERFACE _UWP)
+endif()
+
 if(WIN32)
 	set(MIN_WIN32 0x0A00)
 	target_compile_definitions(PCSX2_FLAGS INTERFACE
@@ -822,7 +826,7 @@ set(pcsx2DebugToolsHeaders
 set(pcsx2HostSources
 	Host/AudioStream.cpp
 	Host/CubebAudioStream.cpp
-	Host/SDLAudioStream.cpp)
+)
 
 set(pcsx2HostHeaders
 	Host/AudioStream.h
@@ -846,13 +850,18 @@ set(pcsx2ImGuiHeaders
 set(pcsx2InputSources
 	Input/InputManager.cpp
 	Input/InputSource.cpp
-	Input/SDLInputSource.cpp
 )
+
 set(pcsx2InputHeaders
 	Input/InputManager.h
 	Input/InputSource.h
-	Input/SDLInputSource.h
 )
+
+if (NOT UWP_BUILD)
+	list(APPEND pcsx2HostSources  Host/SDLAudioStream.cpp)
+	list(APPEND pcsx2InputSources Input/SDLInputSource.cpp)
+	list(APPEND pcsx2InputHeaders Input/SDLInputSource.h)
+endif()
 
 if(APPLE)
 	list(APPEND pcsx2GSSources
@@ -1122,7 +1131,9 @@ if(WIN32)
 	)
 endif()
 
-target_sources(PCSX2 PRIVATE ${pcsx2USBSources} ${pcsx2USBHeaders})
+if (NOT UWP_BUILD)
+	target_sources(PCSX2 PRIVATE ${pcsx2USBSources} ${pcsx2USBHeaders})
+endif()
 
 if(APPLE OR BSD)
 	if(APPLE)
@@ -1136,7 +1147,7 @@ if(APPLE OR BSD)
 		${pcsx2LinuxHeaders})
 endif()
 
-target_link_libraries(PCSX2_FLAGS INTERFACE
+set(PCSX2_LIBS
 	common
 	imgui
 	fmt::fmt
@@ -1148,9 +1159,7 @@ target_link_libraries(PCSX2_FLAGS INTERFACE
 	discord-rpc
 	simpleini
 	freesurround
-	SDL3::SDL3
 	ZLIB::ZLIB
-	LZ4::LZ4
 	SoundTouch::SoundTouch
 	PNG::PNG
 	LZMA::LZMA
@@ -1161,6 +1170,17 @@ target_link_libraries(PCSX2_FLAGS INTERFACE
 	plutosvg::plutosvg
 	${LIBC_LIBRARIES}
 )
+
+# Don't really need link libraries for the static lib config...
+# A lot of this config will get duplicated in the UWP specific project
+if (NOT UWP_BUILD)
+	list(APPEND PCSX2_LIBS SDL3::SDL3 LZ4::LZ4)
+else()
+	# Odd casing issue for lz4 caused by vcpkg, other libs unaffected?
+	list(APPEND PCSX2_LIBS lz4::lz4)
+endif()
+
+target_link_libraries(PCSX2_FLAGS INTERFACE ${PCSX2_LIBS})
 
 if(WIN32)
 	target_link_libraries(PCSX2_FLAGS INTERFACE
@@ -1280,7 +1300,7 @@ function(setup_main_executable target)
 	get_property(PCSX2_SOURCE_DIR GLOBAL PROPERTY PCSX2_SOURCE_DIR)
 	get_property(PCSX2_METAL_SHADERS GLOBAL PROPERTY PCSX2_METAL_SHADERS)
 
-	if(WIN32)
+	if(WIN32 AND NOT UWP_BUILD)
 		target_sources(${target} PRIVATE
 			${PCSX2_SOURCE_DIR}/windows/PCSX2.manifest
 			${PCSX2_SOURCE_DIR}/windows/PCSX2.rc
