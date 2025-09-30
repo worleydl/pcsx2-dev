@@ -4,6 +4,8 @@
  * This program is made available under an ISC-style license.  See the
  * accompanying file LICENSE for details.
  */
+// UWP TODO: Update project config to set this
+#define _UWP
 #undef WINVER
 #define WINVER 0x0501
 #undef WIN32_LEAN_AND_MEAN
@@ -473,11 +475,15 @@ winmm_stream_init(cubeb * context, cubeb_stream ** stream,
   switch (output_stream_params->format) {
   case CUBEB_SAMPLE_S16LE:
     wfx.Format.wBitsPerSample = 16;
+#ifndef _UWP
     wfx.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+#endif
     break;
   case CUBEB_SAMPLE_FLOAT32LE:
     wfx.Format.wBitsPerSample = 32;
+#ifndef _UWP
     wfx.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+#endif
     break;
   default:
     return CUBEB_ERROR_INVALID_FORMAT;
@@ -930,7 +936,9 @@ winmm_query_supported_formats(UINT devid, DWORD formats,
   wfx.Format.cbSize = 22;
   wfx.Samples.wValidBitsPerSample = wfx.Format.wBitsPerSample;
   wfx.dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+#ifndef _UWP
   wfx.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+#endif
   if (waveOutOpen(NULL, devid, &wfx.Format, 0, 0, WAVE_FORMAT_QUERY) ==
       MMSYSERR_NOERROR)
     *supfmt = (cubeb_device_fmt)(*supfmt | CUBEB_DEVICE_FMT_F32LE);

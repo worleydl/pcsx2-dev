@@ -122,12 +122,15 @@ set(BinLibs
 	${PCSX2_DIR}/PCSX2/pcsx2.lib
 
 	# DX stuff
+	d3dcompiler.lib
 	d3d11.lib
 	d3d12.lib
 	dxgi.lib
-	dxguid.lib
 
-	# System
+	# Other System
+	dwmapi.lib
+	opengl32.lib # Not used currently, should be preproc'd out eventually
+	ws2_32.lib
 	OneCore.lib
 	WindowsApp.lib
 )

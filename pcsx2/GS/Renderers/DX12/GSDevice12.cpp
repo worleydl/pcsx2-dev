@@ -1179,7 +1179,9 @@ void GSDevice12::PushDebugGroup(const char* fmt, ...)
 	const UINT color = Palette(
 		++s_debug_scope_depth, {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 0.5f}, {0.8f, 0.90f, 0.30f});
 
+#ifndef _UWP
 	PIXBeginEvent(GetCommandList(), color, "%s", buf.c_str());
+#endif
 #endif
 }
 
@@ -1191,7 +1193,9 @@ void GSDevice12::PopDebugGroup()
 
 	s_debug_scope_depth = (s_debug_scope_depth == 0) ? 0 : (s_debug_scope_depth - 1u);
 
+#ifndef _UWP
 	PIXEndEvent(GetCommandList());
+#endif
 #endif
 }
 
@@ -1222,7 +1226,9 @@ void GSDevice12::InsertDebugMessage(DebugMessageCategory category, const char* f
 		static_cast<BYTE>(fcolor[1] * 255.0f),
 		static_cast<BYTE>(fcolor[2] * 255.0f));
 
+#ifndef _UWP
 	PIXSetMarker(GetCommandList(), color, "%s", buf.c_str());
+#endif
 #endif
 }
 
