@@ -1273,14 +1273,16 @@ bool InputManager::PreprocessEvent(InputBindingKey key, float value, GenericInpu
 		if (ImGuiManager::ProcessPointerButtonEvent(key, value))
 			return true;
 	}
-#ifndef _UWP
 	else if (generic_key != GenericInputBinding::Unknown)
 	{
+#ifndef _UWP
 		InputLayout layout = s_input_sources[static_cast<u32>(InputSourceType::SDL)]->GetControllerLayout(key.source_index);
+#else
+		InputLayout layout = s_input_sources[static_cast<u32>(InputSourceType::XInput)]->GetControllerLayout(key.source_index);
+#endif
 		if (ImGuiManager::ProcessGenericInputEvent(generic_key, layout, value) && value != 0.0f)
 			return true;
 	}
-#endif
 
 	return false;
 }
