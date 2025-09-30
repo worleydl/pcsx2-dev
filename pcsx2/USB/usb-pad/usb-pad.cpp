@@ -5,7 +5,9 @@
 #include "IconsFontAwesome6.h"
 #include "IconsPromptFont.h"
 #include "USB/qemu-usb/USBinternal.h"
+#ifndef _UWP
 #include "USB/usb-pad/usb-pad-sdl-ff.h"
+#endif
 #include "USB/USB.h"
 #include "Host.h"
 #include "StateWrapper.h"
@@ -602,11 +604,13 @@ namespace usb_pad
 
 	void PadState::OpenFFDevice()
 	{
+#ifndef _UWP
 		if (mFFdevName.empty())
 			return;
 
 		mFFdev.reset();
 		mFFdev = SDLFFDevice::Create(mFFdevName);
+#endif
 	}
 
 	static void pad_handle_data(USBDevice* dev, USBPacket* p)
