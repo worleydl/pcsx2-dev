@@ -739,8 +739,10 @@ bool GSDevice12::Create(GSVSyncMode vsync_mode, bool allow_present_throttle)
 		return false;
 	}
 
+#ifndef _UWP
 	if (!CompileCASPipelines())
 		return false;
+#endif
 
 	if (!CompileImGuiPipeline())
 		return false;
