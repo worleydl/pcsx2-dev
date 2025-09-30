@@ -577,6 +577,11 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::CompileAndAddPip
 
 bool D3D12ShaderCache::AddPipelineToBlob(const CacheIndexKey& key, ID3D12PipelineState* pso)
 {
+// GetCachedBlob not available on xbox dx12
+#ifdef _UWP
+	return false;
+#endif
+
 	if (!m_pipeline_blob_file || std::fseek(m_pipeline_blob_file, 0, SEEK_END) != 0)
 		return false;
 

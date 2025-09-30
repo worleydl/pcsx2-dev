@@ -92,6 +92,7 @@ END_HOTKEY_LIST()
 bool WinRTHost::InitializeConfig()
 {
 	// Taken from gsrunner
+	EmuFolders::SetAppRoot();
 	if (!EmuFolders::SetResourcesDirectory() || !EmuFolders::SetDataDirectory(nullptr))
 		return false;
 
@@ -639,7 +640,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 		window.Dispatcher().RunAsync(CoreDispatcherPriority::Normal, []() {
 			Sleep(500);
-			InputManager::ReloadDevices();
+			//InputManager::ReloadDevices();
 		});
 
 		while (s_running)
@@ -678,7 +679,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 			else
 			{
 				WinRTHost::ProcessEventQueue();
-				InputManager::PollSources();
+				//InputManager::PollSources();
 			}
 
 			Sleep(1);
