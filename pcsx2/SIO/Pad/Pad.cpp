@@ -12,7 +12,9 @@
 #include "SIO/Pad/PadNotConnected.h"
 #include "SIO/Sio.h"
 
+#ifndef _UWP
 #include "Input/SDLInputSource.h"
+#endif
 
 #include "IconsFontAwesome5.h"
 
@@ -167,13 +169,17 @@ void Pad::SetDefaultControllerConfig(SettingsInterface& si)
 			InputManager::InputSourceToString(static_cast<InputSourceType>(i)),
 			InputManager::GetInputSourceDefaultEnabled(static_cast<InputSourceType>(i)));
 	}
+#ifndef _UWP
 	si.SetBoolValue("InputSources", "SDLControllerEnhancedMode", true);
 	si.SetBoolValue("InputSources", "SDLPS5PlayerLED", true);
+#endif
 	si.SetBoolValue("Pad", "MultitapPort1", false);
 	si.SetBoolValue("Pad", "MultitapPort2", false);
 	si.SetFloatValue("Pad", "PointerXScale", 8.0f);
 	si.SetFloatValue("Pad", "PointerYScale", 8.0f);
+#ifndef _UWP
 	SDLInputSource::ResetRGBForAllPlayers(si);
+#endif
 
 	// PCSX2 Controller Settings - Default pad types and parameters.
 	for (u32 i = 0; i < Pad::NUM_CONTROLLER_PORTS; i++)
@@ -341,8 +347,10 @@ void Pad::CopyConfiguration(SettingsInterface* dest_si, const SettingsInterface&
 			dest_si->CopyBoolValue(src_si, "InputSources",
 				InputManager::InputSourceToString(static_cast<InputSourceType>(i)));
 		}
+#ifndef _UWP
 		dest_si->CopyBoolValue(src_si, "InputSources", "SDLControllerEnhancedMode");
 		dest_si->CopyBoolValue(src_si, "InputSources", "SDLPS5PlayerLED");
+#endif
 	}
 
 	for (u32 port = 0; port < Pad::NUM_CONTROLLER_PORTS; port++)

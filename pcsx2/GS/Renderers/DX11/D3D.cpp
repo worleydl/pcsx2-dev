@@ -7,7 +7,7 @@
 #include "GS/GSExtra.h"
 #include "Host.h"
 
-#ifdef _M_X86
+#if defined(_M_X86) && !defined(_UWP)
 #include "GS/Renderers/Vulkan/GSDeviceVK.h"
 #endif
 

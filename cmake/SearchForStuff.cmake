@@ -17,10 +17,13 @@ find_package(ZLIB REQUIRED) # v1.3, but Mac uses the SDK version.
 find_package(Zstd 1.5.5 REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(WebP REQUIRED) # v1.3.2, spews an error on Linux because no pkg-config.
-find_package(SDL3 3.2.6 REQUIRED)
 find_package(Freetype 2.11.1 REQUIRED)
 find_package(plutovg REQUIRED) # v0.0.13 is needed for building plutosvg, but we can support v1.0.0
 find_package(plutosvg 0.0.6 REQUIRED)
+
+if(NOT UWP_BUILD)
+	find_package(SDL3 3.2.6 REQUIRED)
+endif()
 
 if(USE_VULKAN)
 	find_package(Shaderc REQUIRED)
@@ -107,7 +110,18 @@ disable_compiler_warnings_for_target(cubeb)
 disable_compiler_warnings_for_target(speex)
 
 # Find the Qt components that we need.
-find_package(Qt6 6.7.3 COMPONENTS CoreTools Core GuiTools Gui WidgetsTools Widgets LinguistTools REQUIRED)
+if(ENABLE_QT_UI)
+	find_package(Qt6 6.7.3 COMPONENTS CoreTools Core GuiTools Gui WidgetsTools Widgets LinguistTools REQUIRED)
+endif()
+
+if (Qt6_VERSION VERSION_GREATER_EQUAL 6.10.0)
+	find_package(Qt6 COMPONENTS CorePrivate GuiPrivate WidgetsPrivate REQUIRED)
+endif()
+
+if (NOT UWP_BUILD)
+# The docking system for the debugger.
+	find_package(KDDockWidgets-qt6 2.3.0 REQUIRED)
+endif()
 
 if(WIN32)
   add_subdirectory(3rdparty/rainterface EXCLUDE_FROM_ALL)
