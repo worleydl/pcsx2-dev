@@ -156,13 +156,16 @@ void Host::OnAchievementsHardcoreModeChanged(bool enabled)
 {
 }
 
-
 void Host::OnAchievementsLoginRequested(Achievements::LoginRequestReason reason)
 {
 	// TODO: bring this back
 } 
 
 void Host::OnAchievementsLoginSuccess(char const* display_name, u32 points, u32 sc_points, u32 unread_msg)
+{
+}
+
+void Host::OnAchievementsRefreshed()
 {
 }
 
