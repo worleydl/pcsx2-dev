@@ -1160,6 +1160,7 @@ set(PCSX2_LIBS
 	simpleini
 	freesurround
 	ZLIB::ZLIB
+	LZ4::LZ4
 	SoundTouch::SoundTouch
 	PNG::PNG
 	LZMA::LZMA
@@ -1174,10 +1175,7 @@ set(PCSX2_LIBS
 # Don't really need link libraries for the static lib config...
 # A lot of this config will get duplicated in the UWP specific project
 if (NOT UWP_BUILD)
-	list(APPEND PCSX2_LIBS SDL3::SDL3 LZ4::LZ4)
-else()
-	# Odd casing issue for lz4 caused by vcpkg, other libs unaffected?
-	list(APPEND PCSX2_LIBS lz4::lz4)
+	list(APPEND PCSX2_LIBS SDL3::SDL3)
 endif()
 
 target_link_libraries(PCSX2_FLAGS INTERFACE ${PCSX2_LIBS})
