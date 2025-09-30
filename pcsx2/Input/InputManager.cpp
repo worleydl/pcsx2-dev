@@ -715,11 +715,17 @@ bool InputManager::GetInputSourceDefaultEnabled(InputSourceType type)
 			return true;
 
 #ifdef _WIN32
+#ifndef _UWP
 		case InputSourceType::DInput:
 			return false;
+#endif
 
 		case InputSourceType::XInput:
+#ifndef _UWP
 			return false;
+#else
+			return true;
+#endif
 #endif
 
 		default:

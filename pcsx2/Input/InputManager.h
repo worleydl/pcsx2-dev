@@ -23,9 +23,13 @@ enum class InputSourceType : u32
 {
 	Keyboard,
 	Pointer,
+#ifndef _UWP
 	SDL,
+#endif
 #ifdef _WIN32
+#ifndef _UWP
 	DInput,
+#endif
 	XInput,
 #endif
 	Count,
