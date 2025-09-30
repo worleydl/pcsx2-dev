@@ -862,6 +862,10 @@ if (NOT UWP_BUILD)
 	list(APPEND pcsx2InputSources Input/SDLInputSource.cpp)
 	list(APPEND pcsx2InputHeaders Input/SDLInputSource.h)
 	list(APPEND pcsx2USBSources   USB/usb-pad/usb-pad-sdl-ff.cpp)
+
+	if (WIN32)
+		list(APPEND pcsx2InputSources Input/DInputSource.cpp)
+	endif()
 endif()
 
 if(APPLE)
@@ -887,7 +891,6 @@ if(WIN32)
 endif()
 if(WIN32)
 	list(APPEND pcsx2InputSources
-		Input/DInputSource.cpp
 		Input/XInputSource.cpp
 	)
 	list(APPEND pcsx2InputHeaders
