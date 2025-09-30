@@ -132,6 +132,12 @@ bool XInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex
 	// xinput1_3.dll is flawed and obsolete, but it's also commonly used by wrappers.
 	// For this reason, try to load it *only* from the application directory, and not system32.
 	m_xinput_module = LoadLibraryExW(L"xinput1_3", nullptr, LOAD_LIBRARY_SEARCH_APPLICATION_DIR);
+#ifdef _UWP
+	if (!m_xinput_module)
+	{
+		m_xinput_module = LoadLibraryW(L"xinputuap");
+	}
+#endif
 	if (!m_xinput_module)
 	{
 		m_xinput_module = LoadLibraryW(L"xinput1_4");
