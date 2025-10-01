@@ -137,9 +137,11 @@ set(BinLibs
 
 	# Main bin
 	${PCSX2_DIR}/common/common.lib
-	${PCSX2_DIR}/PCSX2/GS-avx.lib
-	${PCSX2_DIR}/PCSX2/GS-avx2.lib
-	${PCSX2_DIR}/PCSX2/GS-sse4.lib
+	# Need this if DISABLE_ADVANCE_SIM is enabled
+	# They seem to perform worse...
+	#${PCSX2_DIR}/PCSX2/GS-avx.lib
+	#${PCSX2_DIR}/PCSX2/GS-avx2.lib
+	#${PCSX2_DIR}/PCSX2/GS-sse4.lib
 	${PCSX2_DIR}/PCSX2/pcsx2.lib
 
 	# DX stuff
