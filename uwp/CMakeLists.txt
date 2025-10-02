@@ -138,10 +138,9 @@ set(BinLibs
 	# Main bin
 	${PCSX2_DIR}/common/common.lib
 	# Need this if DISABLE_ADVANCE_SIM is enabled
-	# They seem to perform worse...
-	#${PCSX2_DIR}/PCSX2/GS-avx.lib
-	#${PCSX2_DIR}/PCSX2/GS-avx2.lib
-	#${PCSX2_DIR}/PCSX2/GS-sse4.lib
+	${PCSX2_DIR}/PCSX2/GS-avx.lib
+	${PCSX2_DIR}/PCSX2/GS-avx2.lib
+	${PCSX2_DIR}/PCSX2/GS-sse4.lib
 	${PCSX2_DIR}/PCSX2/pcsx2.lib
 
 	# DX stuff
@@ -151,10 +150,11 @@ set(BinLibs
 	dxgi.lib
 
 	# Other System
+	ws2_32.lib
 	OneCore.lib
 	WindowsApp.lib
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+target_compile_options(${PROJECT_NAME} PRIVATE /utf-8 /arch:AVX2)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BinLibs})
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_WINDOWS_TARGET_PLATFORM_MIN_VERSION 10.0.19041.0)
