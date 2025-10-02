@@ -424,6 +424,7 @@ std::optional<WindowInfo> WinRTHost::GetPlatformWindowInfo()
 		wi.surface_scale = 1.0f;
 		wi.type = WindowInfo::Type::Win32;
 		wi.surface_handle = reinterpret_cast<void*>(winrt::get_abi(*s_corewind));
+		wi.surface_refresh_rate = ceil(HdmiDisplayInformation::GetForCurrentView().GetCurrentDisplayMode().RefreshRate());
 	}
 	else
 	{
