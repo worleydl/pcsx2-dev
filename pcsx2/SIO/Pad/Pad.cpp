@@ -589,7 +589,8 @@ void Pad::SetControllerState(u32 controller, u32 bind, float value)
 	if (controller >= NUM_CONTROLLER_PORTS)
 		return;
 
-	s_controllers[controller]->Set(bind, value);
+	if (s_controllers[controller])
+		s_controllers[controller]->Set(bind, value);
 }
 
 bool Pad::Freeze(StateWrapper& sw)
