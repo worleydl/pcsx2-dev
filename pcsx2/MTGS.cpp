@@ -30,13 +30,6 @@
 	} while (0)
 #endif
 
-#ifdef _UWP
-namespace WinRTHost
-{
-	extern void BindMTGSThread(std::function<void()>);
-}
-#endif
-
 namespace MTGS
 {
 	struct BufferedData
@@ -130,11 +123,7 @@ void MTGS::StartThread()
 	pxAssertRel(!s_open_flag.load(), "GS thread should not be opened when starting");
 	s_sem_event.Reset();
 	s_shutdown_flag.store(false, std::memory_order_release);
-#ifndef _UWP
 	s_thread.Start(&MTGS::ThreadEntryPoint);
-#else
-	WinRTHost::BindMTGSThread(ThreadEntryPoint);
-#endif
 }
 
 void MTGS::ShutdownThread()
@@ -318,10 +307,6 @@ union PacketTagType
 	};
 };
 
-namespace WinRTHost
-{
-	extern void ProcessEvents();
-}
 void MTGS::MainLoop()
 {
 	// Threading info: run in MTGS thread
@@ -335,8 +320,6 @@ void MTGS::MainLoop()
 
 	while (true)
 	{
-		WinRTHost::ProcessEvents();
-
 		if (s_run_idle_flag.load(std::memory_order_acquire) && VMManager::GetState() != VMState::Running && GSHasDisplayWindow())
 		{
 			if (!s_sem_event.CheckForWork())
