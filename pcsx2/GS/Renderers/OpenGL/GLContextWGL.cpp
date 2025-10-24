@@ -12,6 +12,11 @@
 #pragma clang diagnostic ignored "-Wmicrosoft-cast"
 #endif
 
+#ifdef _UWP
+typedef BOOL(WINAPI* PFN_wglSwapBuffers)(HDC);
+PFN_wglSwapBuffers mesa_wglSwapBuffers = nullptr;
+#endif
+
 static void* GetProcAddressCallback(const char* name)
 {
 	void* addr = wglGetProcAddress(name);
@@ -29,6 +34,10 @@ static bool ReloadWGL(HDC dc)
 		Console.Error("Loading GLAD WGL functions failed");
 		return false;
 	}
+
+#ifdef _UWP
+	mesa_wglSwapBuffers = (PFN_wglSwapBuffers)GetProcAddressCallback("wglSwapBuffers");
+#endif
 
 	return true;
 }
@@ -128,7 +137,11 @@ void GLContextWGL::ResizeSurface(u32 new_surface_width /*= 0*/, u32 new_surface_
 
 bool GLContextWGL::SwapBuffers()
 {
+#ifndef _UWP
 	return ::SwapBuffers(m_dc);
+#else
+	return mesa_wglSwapBuffers(m_dc);
+#endif
 }
 
 bool GLContextWGL::IsCurrent()
@@ -188,6 +201,7 @@ std::unique_ptr<GLContext> GLContextWGL::CreateSharedContext(const WindowInfo& w
 
 HDC GLContextWGL::GetDCAndSetPixelFormat(HWND hwnd, Error* error)
 {
+#ifndef _UWP
 	PIXELFORMATDESCRIPTOR pfd = {};
 	pfd.nSize = sizeof(pfd);
 	pfd.nVersion = 1;
@@ -227,6 +241,9 @@ HDC GLContextWGL::GetDCAndSetPixelFormat(HWND hwnd, Error* error)
 	}
 
 	return hDC;
+#else
+	return static_cast<HDC>(m_wi.surface_handle);
+#endif
 }
 
 bool GLContextWGL::InitializeDC(Error* error)

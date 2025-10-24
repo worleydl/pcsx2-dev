@@ -34,6 +34,12 @@ add_executable(${PROJECT_NAME} WIN32
 )
 
 set(BinDeps
+	${CMAKE_SOURCE_DIR}/tmp-dep/dxil.dll
+	${CMAKE_SOURCE_DIR}/tmp-dep/libgallium_wgl.dll
+	${CMAKE_SOURCE_DIR}/tmp-dep/libuwp.dll
+	${CMAKE_SOURCE_DIR}/tmp-dep/opengl32.dll
+	${CMAKE_SOURCE_DIR}/tmp-dep/z-1.dll
+
 	Package.appxmanifest
 )
 source_group("BinDeps" FILES ${BinDeps})
@@ -101,8 +107,8 @@ set(BinLibs
 	${PCSX2_DIR}/3rdparty/d3d12memalloc/D3D12MemAlloc.lib
 	${PCSX2_DIR}/3rdparty/demangler/demanglegnu.lib
 	${PCSX2_DIR}/3rdparty/discord-rpc/discord-rpc.lib
-	${PCSX2_DIR}/3rdparty/fmt/fmt.lib # Needs swap config for release/debug
 	${PCSX2_DIR}/3rdparty/freesurround/freesurround.lib
+	${PCSX2_DIR}/3rdparty/glad/glad.lib
 	${PCSX2_DIR}/3rdparty/imgui/imgui.lib
 	${PCSX2_DIR}/3rdparty/libchdr/libchdr.lib
 	${PCSX2_DIR}/3rdparty/libzip/zip.lib
@@ -150,10 +156,17 @@ set(BinLibs
 	dxgi.lib
 
 	# Other System
-	ws2_32.lib
+	opengl32.lib
 	OneCore.lib
 	WindowsApp.lib
 )
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+       list(APPEND BinLibs ${PCSX2_DIR}/3rdparty/fmt/fmtd.lib)
+else()
+       list(APPEND BinLibs ${PCSX2_DIR}/3rdparty/fmt/fmt.lib)
+endif()
+
 
 target_compile_options(${PROJECT_NAME} PRIVATE /utf-8 /arch:AVX2)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BinLibs})

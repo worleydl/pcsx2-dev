@@ -74,8 +74,11 @@ static bool s_running = true;
 static std::thread s_gamescanner_thread;
 std::atomic<bool> b_gamescan_active = false;
 
+std::condition_variable m_block_cv;
 std::condition_variable m_events_cv;
 std::mutex m_events_mtx;
+std::mutex m_blocking_events_mtx;
+std::deque<std::function<void()>> m_event_queue;
 
 static Threading::Thread s_emuthread;
 
@@ -83,6 +86,8 @@ namespace WinRTHost
 {
 	static bool InitializeConfig();
 	static std::optional<WindowInfo> GetPlatformWindowInfo();
+
+	void ProcessEvents();
 } // namespace WinRTHost
 
 static std::unique_ptr<INISettingsInterface> s_settings_interface;
@@ -172,6 +177,11 @@ bool WinRTHost::InitializeConfig()
 
 	VMManager::Internal::LoadStartupSettings();
 	return true;
+}
+
+void WinRTHost::ProcessEvents()
+{
+	s_corewind->Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 }
 
 void Host::CommitBaseSettingChanges()
@@ -354,29 +364,31 @@ void Host::OnSaveStateSaved(const std::string_view filename)
 {
 }
 
-void Host::RunOnCPUThread(std::function<void()> func, bool block /* = false */)
+void Host::RunOnCPUThread(std::function<void()> func, bool blocking /* = false */)
 {
-	if (block)
+	if (blocking)
 	{
+		//std::unique_lock<std::mutex> lock(m_events_mtx);
 		bool finished = false;
-		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func, &finished]() {
+		m_event_queue.push_back([func, &finished]() {
 			func();
 			{
-				std::unique_lock<std::mutex> lock(m_events_mtx);
+				std::unique_lock<std::mutex> block(m_blocking_events_mtx);
 				finished = true;
 			}
-			m_events_cv.notify_one();
+			m_block_cv.notify_one();
 		});
 
-		std::unique_lock<std::mutex> lock(m_events_mtx);
-		m_events_cv.wait(lock, [&finished] { return finished; });
+		m_events_cv.notify_one();
+		std::unique_lock<std::mutex> block(m_blocking_events_mtx);
+		m_block_cv.wait(block, [&finished] { return finished; });
 	}
 	// async
 	else
 	{
-		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func]() {
-			func();
-		});
+		std::unique_lock<std::mutex> lock(m_events_mtx);
+		m_event_queue.push_back(func);
+		m_events_cv.notify_one();
 	}
 	
 }
@@ -697,7 +709,14 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 		while (s_running)
 		{
-			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessOneAndAllPending);
+			std::unique_lock<std::mutex> lock(m_events_mtx);
+			m_events_cv.wait(lock, [this] { return !m_event_queue.empty(); });
+
+			while (!m_event_queue.empty())
+			{
+				m_event_queue.front()();
+				m_event_queue.pop_front();
+			}
 		}
 
 		s_emuthread.Join();

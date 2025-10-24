@@ -575,14 +575,7 @@ void GSRenderer::EndPresentFrame()
 
 	FullscreenUI::Render();
 	ImGuiManager::RenderOSD();
-#ifndef _UWP
 	g_gs_device->EndPresent();
-#else
-	Host::RunOnCPUThread([] {
-		g_gs_device->EndPresent();
-	},
-	true);
-#endif
 	ImGuiManager::NewFrame();
 }
 
