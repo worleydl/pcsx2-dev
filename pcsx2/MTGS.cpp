@@ -14,7 +14,6 @@
 #include "common/StringUtil.h"
 #include "common/WrappedMemCopy.h"
 
-#include <condition_variable>
 #include <list>
 #include <mutex>
 #include <thread>
@@ -171,10 +170,6 @@ void MTGS::ThreadEntryPoint()
 			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
 #else
 		// UWP seems to prefer render on main with random undefined behaviors when you offload to another thread
-		// TODO: Put present on main and then gallium might be usable
-		std::mutex gs_mutex;
-		std::condition_variable cv;
-
 		bool result;
 		Host::RunOnCPUThread([&result] {
 			result = GSopen(EmuConfig.GS, EmuConfig.GS.Renderer, RingBuffer.Regs,
