@@ -74,6 +74,9 @@ static bool s_running = true;
 static std::thread s_gamescanner_thread;
 std::atomic<bool> b_gamescan_active = false;
 
+std::condition_variable m_events_cv;
+std::mutex m_events_mtx;
+
 static Threading::Thread s_emuthread;
 
 namespace WinRTHost
@@ -353,9 +356,29 @@ void Host::OnSaveStateSaved(const std::string_view filename)
 
 void Host::RunOnCPUThread(std::function<void()> func, bool block /* = false */)
 {
-	s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func]() {
-		func();
-	});
+	if (block)
+	{
+		bool finished = false;
+		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func, &finished]() {
+			func();
+			{
+				std::unique_lock<std::mutex> lock(m_events_mtx);
+				finished = true;
+			}
+			m_events_cv.notify_one();
+		});
+
+		std::unique_lock<std::mutex> lock(m_events_mtx);
+		m_events_cv.wait(lock, [&finished] { return finished; });
+	}
+	// async
+	else
+	{
+		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func]() {
+			func();
+		});
+	}
+	
 }
 
 void Host::RefreshGameListAsync(bool invalidate_cache)
