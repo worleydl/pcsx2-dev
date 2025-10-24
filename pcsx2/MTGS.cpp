@@ -30,6 +30,13 @@
 	} while (0)
 #endif
 
+#ifdef _UWP
+namespace WinRTHost
+{
+	extern void BindMTGSThread(std::function<void()>);
+}
+#endif
+
 namespace MTGS
 {
 	struct BufferedData
@@ -123,7 +130,11 @@ void MTGS::StartThread()
 	pxAssertRel(!s_open_flag.load(), "GS thread should not be opened when starting");
 	s_sem_event.Reset();
 	s_shutdown_flag.store(false, std::memory_order_release);
+#ifndef _UWP
 	s_thread.Start(&MTGS::ThreadEntryPoint);
+#else
+	WinRTHost::BindMTGSThread(ThreadEntryPoint);
+#endif
 }
 
 void MTGS::ShutdownThread()
@@ -181,11 +192,7 @@ void MTGS::ThreadEntryPoint()
 		}
 
 		// we're ready to go
-#ifndef _UWP
 		MainLoop();
-#else
-		Host::RunOnCPUThread(MainLoop, true);
-#endif
 
 		// when we come back here, it's because we closed (or shutdown)
 		// that means the emu thread should be blocked, waiting for us to be done

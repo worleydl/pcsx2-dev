@@ -74,13 +74,18 @@ static bool s_running = true;
 static std::thread s_gamescanner_thread;
 std::atomic<bool> b_gamescan_active = false;
 
-std::condition_variable m_block_cv;
-std::condition_variable m_events_cv;
-std::mutex m_events_mtx;
-std::mutex m_blocking_events_mtx;
-std::deque<std::function<void()>> m_event_queue;
+static std::condition_variable m_mtgs_cv;
+static std::mutex m_mtgs_mtx;
+static std::function <void()> m_mtgs_func = nullptr;
 
-static Threading::Thread s_emuthread;
+static std::condition_variable m_block_cv;
+static std::condition_variable m_events_cv;
+static std::mutex m_events_mtx;
+static std::mutex m_blocking_events_mtx;
+static std::deque<std::function<void()>> m_event_queue;
+
+
+	static Threading::Thread s_emuthread;
 
 namespace WinRTHost
 {
@@ -88,6 +93,7 @@ namespace WinRTHost
 	static std::optional<WindowInfo> GetPlatformWindowInfo();
 
 	void ProcessEvents();
+	void BindMTGSThread(std::function<void()> fn);
 } // namespace WinRTHost
 
 static std::unique_ptr<INISettingsInterface> s_settings_interface;
@@ -182,6 +188,23 @@ bool WinRTHost::InitializeConfig()
 void WinRTHost::ProcessEvents()
 {
 	s_corewind->Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+
+	if (!m_event_queue.empty())
+	{
+		std::unique_lock<std::mutex> lock(m_events_mtx);
+		while (!m_event_queue.empty())
+		{
+			m_event_queue.front()();
+			m_event_queue.pop_front();
+		}
+	}
+}
+
+void WinRTHost::BindMTGSThread(std::function < void()> fn)
+{
+	std::unique_lock<std::mutex> lock(m_mtgs_mtx);
+	m_mtgs_func = fn;
+	m_mtgs_cv.notify_one();
 }
 
 void Host::CommitBaseSettingChanges()
@@ -707,17 +730,11 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 		s_emuthread.Start(EmuThreadLoop);
 
-		while (s_running)
-		{
-			std::unique_lock<std::mutex> lock(m_events_mtx);
-			m_events_cv.wait(lock, [this] { return !m_event_queue.empty(); });
-
-			while (!m_event_queue.empty())
-			{
-				m_event_queue.front()();
-				m_event_queue.pop_front();
-			}
-		}
+		// Main execution waits for MTGS thread to be bound then executes it here
+		std::unique_lock<std::mutex> lock(m_mtgs_mtx);
+		m_mtgs_cv.wait(lock, [] { return m_mtgs_func != nullptr; });
+		m_mtgs_func();  // Event handling is triggered inside MTGS loop, calls back to ProcessEvents
+		lock.unlock();
 
 		s_emuthread.Join();
 
