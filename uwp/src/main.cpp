@@ -543,7 +543,6 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 	{
 		v.Activated({this, &App::OnActivate});
 
-		namespace WGI = winrt::Windows::Gaming::Input;
 
 		const char* error;
 		if (!VMManager::PerformEarlyHardwareChecks(&error))
@@ -556,27 +555,6 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		{
 			Console.Error("Failed to initialize config.");
 			return;
-		}
-
-
-		try
-		{
-			WGI::RawGameController::RawGameControllerAdded(
-				[](auto&&, const WGI::RawGameController raw_game_controller) {
-					Host::RunOnCPUThread([]() {
-						InputManager::ReloadDevices();
-					});
-				});
-
-			WGI::RawGameController::RawGameControllerRemoved(
-				[](auto&&, const WGI::RawGameController raw_game_controller) {
-					Host::RunOnCPUThread([]() {
-						InputManager::ReloadDevices();
-					});
-				});
-		}
-		catch (winrt::hresult_error)
-		{
 		}
 	}
 
@@ -673,6 +651,24 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 			Sleep(500);
 			InputManager::ReloadDevices();
 		});
+
+
+		namespace WGI = winrt::Windows::Gaming::Input;
+		try
+		{
+			WGI::RawGameController::RawGameControllerAdded(
+				[](auto&&, const WGI::RawGameController raw_game_controller) {
+					InputManager::ReloadDevices();
+				});
+
+			WGI::RawGameController::RawGameControllerRemoved(
+				[](auto&&, const WGI::RawGameController raw_game_controller) {
+					InputManager::ReloadDevices();
+				});
+		}
+		catch (winrt::hresult_error)
+		{
+		}
 
 		s_emuthread.Start(EmuThreadLoop);
 
