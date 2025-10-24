@@ -165,20 +165,8 @@ void MTGS::ThreadEntryPoint()
 
 		// try initializing.. this could fail
 		std::memcpy(RingBuffer.Regs, PS2MEM_GS, sizeof(PS2MEM_GS));
-#ifndef _UWP
 		const bool opened = GSopen(EmuConfig.GS, EmuConfig.GS.Renderer, RingBuffer.Regs,
 			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
-#else
-		// UWP seems to prefer render on main with random undefined behaviors when you offload to another thread
-		bool result;
-		Host::RunOnCPUThread([&result] {
-			result = GSopen(EmuConfig.GS, EmuConfig.GS.Renderer, RingBuffer.Regs,
-			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
-		},
-		true);
-
-		const bool opened = result;
-#endif
 
 		s_open_flag.store(opened, std::memory_order_release);
 
@@ -193,7 +181,11 @@ void MTGS::ThreadEntryPoint()
 		}
 
 		// we're ready to go
+#ifndef _UWP
 		MainLoop();
+#else
+		Host::RunOnCPUThread(MainLoop, true);
+#endif
 
 		// when we come back here, it's because we closed (or shutdown)
 		// that means the emu thread should be blocked, waiting for us to be done
@@ -319,6 +311,10 @@ union PacketTagType
 	};
 };
 
+namespace WinRTHost
+{
+	extern void ProcessEvents();
+}
 void MTGS::MainLoop()
 {
 	// Threading info: run in MTGS thread
@@ -332,6 +328,8 @@ void MTGS::MainLoop()
 
 	while (true)
 	{
+		WinRTHost::ProcessEvents();
+
 		if (s_run_idle_flag.load(std::memory_order_acquire) && VMManager::GetState() != VMState::Running && GSHasDisplayWindow())
 		{
 			if (!s_sem_event.CheckForWork())
