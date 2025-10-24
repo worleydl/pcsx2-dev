@@ -887,6 +887,10 @@ bool MTGS::WaitForOpen()
 	if (!result)
 		Console.Error("GS failed to open.");
 
+#ifdef _UWP
+	Host::RunOnCPUThread([] { return; }); // Junk function to trip event processing
+#endif
+
 	return result;
 }
 
