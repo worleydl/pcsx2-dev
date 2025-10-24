@@ -171,25 +171,17 @@ void MTGS::ThreadEntryPoint()
 			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
 #else
 		// UWP seems to prefer render on main with random undefined behaviors when you offload to another thread
-		// TODO: Put present on main and then gallium might be usable, move blocking to host impl
+		// TODO: Put present on main and then gallium might be usable
 		std::mutex gs_mutex;
 		std::condition_variable cv;
 
-		bool finished = false;
 		bool result;
-		Host::RunOnCPUThread([&cv, &finished, &result, &gs_mutex] {
+		Host::RunOnCPUThread([&result] {
 			result = GSopen(EmuConfig.GS, EmuConfig.GS.Renderer, RingBuffer.Regs,
 			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
-			{
-				std::unique_lock<std::mutex> lock(gs_mutex);
-				finished = true;
-			}
-			cv.notify_one();
 		},
 		true);
 
-		std::unique_lock<std::mutex> lock(gs_mutex);
-		cv.wait(lock, [&finished] { return finished; });
 		const bool opened = result;
 #endif
 
