@@ -14,6 +14,7 @@
 #include "common/StringUtil.h"
 #include "common/WrappedMemCopy.h"
 
+#include <condition_variable>
 #include <list>
 #include <mutex>
 #include <thread>
@@ -165,8 +166,33 @@ void MTGS::ThreadEntryPoint()
 
 		// try initializing.. this could fail
 		std::memcpy(RingBuffer.Regs, PS2MEM_GS, sizeof(PS2MEM_GS));
+#ifndef _UWP
 		const bool opened = GSopen(EmuConfig.GS, EmuConfig.GS.Renderer, RingBuffer.Regs,
 			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
+#else
+		// UWP seems to prefer render on main with random undefined behaviors when you offload to another thread
+		// TODO: Put present on main and then gallium might be usable, move blocking to host impl
+		std::mutex gs_mutex;
+		std::condition_variable cv;
+
+		bool finished = false;
+		bool result;
+		Host::RunOnCPUThread([&cv, &finished, &result, &gs_mutex] {
+			result = GSopen(EmuConfig.GS, EmuConfig.GS.Renderer, RingBuffer.Regs,
+			VMManager::GetEffectiveVSyncMode(), VMManager::ShouldAllowPresentThrottle());
+			{
+				std::unique_lock<std::mutex> lock(gs_mutex);
+				finished = true;
+			}
+			cv.notify_one();
+		},
+		true);
+
+		std::unique_lock<std::mutex> lock(gs_mutex);
+		cv.wait(lock, [&finished] { return finished; });
+		const bool opened = result;
+#endif
+
 		s_open_flag.store(opened, std::memory_order_release);
 
 		// notify emu thread that we finished opening (or failed)
