@@ -70,8 +70,6 @@ using namespace Windows::UI::Core;
 using namespace Windows::UI::Composition;
 
 static winrt::Windows::UI::Core::CoreWindow* s_corewind = NULL;
-static std::mutex m_event_mutex;
-static std::deque<std::function<void()>> m_event_queue;
 static bool s_running = true;
 static std::thread s_gamescanner_thread;
 std::atomic<bool> b_gamescan_active = false;
@@ -82,7 +80,6 @@ namespace WinRTHost
 {
 	static bool InitializeConfig();
 	static std::optional<WindowInfo> GetPlatformWindowInfo();
-	static void ProcessEventQueue();
 } // namespace WinRTHost
 
 static std::unique_ptr<INISettingsInterface> s_settings_interface;
@@ -354,10 +351,11 @@ void Host::OnSaveStateSaved(const std::string_view filename)
 {
 }
 
-void Host::RunOnCPUThread(std::function<void()> function, bool block /* = false */)
+void Host::RunOnCPUThread(std::function<void()> func, bool block /* = false */)
 {
-	std::unique_lock<std::mutex> lk(m_event_mutex);
-	m_event_queue.push_back(function);
+	s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func]() {
+		func();
+	});
 }
 
 void Host::RefreshGameListAsync(bool invalidate_cache)
@@ -490,7 +488,8 @@ std::optional<WindowInfo> WinRTHost::GetPlatformWindowInfo()
 
 void Host::PumpMessagesOnCPUThread()
 {
-	WinRTHost::ProcessEventQueue();
+	// TODO: Not sure if we need this if the main thread is dedicated to events only
+	//WinRTHost::ProcessEventQueue();
 }
 
 s32 Host::Internal::GetTranslatedStringImpl(
@@ -528,18 +527,6 @@ std::string Host::TranslatePluralToString(const char* context, const char* msg, 
 
 	return ret;
 }
-void WinRTHost::ProcessEventQueue()
-{
-	if (!m_event_queue.empty())
-	{
-		std::unique_lock lk(m_event_mutex);
-		while (!m_event_queue.empty())
-		{
-			m_event_queue.front()();
-			m_event_queue.pop_front();
-		}
-	}
-}
 
 struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 {
@@ -576,14 +563,14 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		{
 			WGI::RawGameController::RawGameControllerAdded(
 				[](auto&&, const WGI::RawGameController raw_game_controller) {
-					m_event_queue.push_back([]() {
+					Host::RunOnCPUThread([]() {
 						InputManager::ReloadDevices();
 					});
 				});
 
 			WGI::RawGameController::RawGameControllerRemoved(
 				[](auto&&, const WGI::RawGameController raw_game_controller) {
-					m_event_queue.push_back([]() {
+					Host::RunOnCPUThread([]() {
 						InputManager::ReloadDevices();
 					});
 				});
@@ -639,8 +626,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		std::string gamePath = filePath.str();
 		if (!gamePath.empty() && gamePath != "")
 		{
-			std::unique_lock<std::mutex> lk(m_event_mutex);
-			m_event_queue.push_back([gamePath]() {
+			Host::RunOnCPUThread([gamePath]() {
 				VMBootParameters params{};
 				params.filename = gamePath;
 				params.source_type = CDVD_SourceType::Iso;
@@ -692,10 +678,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 		while (s_running)
 		{
-			// TODO: Setup wait for new items to process
-			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-			WinRTHost::ProcessEventQueue();
-			Sleep(1);
+			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessOneAndAllPending);
 		}
 
 		s_emuthread.Join();
