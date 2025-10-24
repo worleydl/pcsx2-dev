@@ -76,6 +76,7 @@ static bool s_running = true;
 static std::thread s_gamescanner_thread;
 std::atomic<bool> b_gamescan_active = false;
 
+static Threading::Thread s_emuthread;
 
 namespace WinRTHost
 {
@@ -88,6 +89,58 @@ static std::unique_ptr<INISettingsInterface> s_settings_interface;
 
 BEGIN_HOTKEY_LIST(g_host_hotkeys)
 END_HOTKEY_LIST()
+
+void EmuThreadLoop()
+{
+	VMManager::Internal::CPUThreadInitialize();
+
+	if (VMManager::GetState() != VMState::Running)
+	{
+		GameList::Refresh(false);
+		ImGuiManager::InitializeFullscreenUI();
+
+		MTGS::WaitForOpen();
+	}
+
+	VMManager::ReloadInputSources();
+
+	while (s_running)
+	{
+		if (VMManager::HasValidVM())
+		{
+			switch (VMManager::GetState())
+			{
+				case VMState::Initializing:
+					pxFailRel("Shouldn't be in the starting state state");
+					break;
+
+				case VMState::Paused:
+					InputManager::PollSources();
+					break;
+
+				case VMState::Running:
+					VMManager::Execute();
+					break;
+
+				case VMState::Resetting:
+					VMManager::Reset();
+					break;
+
+				case VMState::Stopping:
+					return;
+
+				default:
+					break;
+			}
+		}
+		else
+		{
+			InputManager::PollSources();
+		}
+
+		Sleep(1);
+	}
+}
 
 bool WinRTHost::InitializeConfig()
 {
@@ -265,6 +318,7 @@ void Host::OnVMStarting()
 
 void Host::OnVMStarted()
 {
+	MTGS::UpdateDisplayWindow();
 }
 
 void Host::OnVMDestroyed()
@@ -628,65 +682,23 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 			[](const winrt::Windows::Foundation::IInspectable&,
 				const winrt::Windows::UI::Core::BackRequestedEventArgs& args) { args.Handled(true); });
 
-		VMManager::Internal::CPUThreadInitialize();
-
-		WinRTHost::ProcessEventQueue();
-		if (VMManager::GetState() != VMState::Running)
-		{
-			GameList::Refresh(false);
-			ImGuiManager::InitializeFullscreenUI();
-
-			MTGS::WaitForOpen();
-		}
-
-		VMManager::ReloadInputSources();
 
 		window.Dispatcher().RunAsync(CoreDispatcherPriority::Normal, []() {
 			Sleep(500);
 			InputManager::ReloadDevices();
 		});
 
+		s_emuthread.Start(EmuThreadLoop);
+
 		while (s_running)
 		{
+			// TODO: Setup wait for new items to process
 			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-
-			if (VMManager::HasValidVM())
-			{
-				switch (VMManager::GetState())
-				{
-					case VMState::Initializing:
-						pxFailRel("Shouldn't be in the starting state state");
-						break;
-
-					case VMState::Paused:
-						InputManager::PollSources();
-						WinRTHost::ProcessEventQueue();
-						break;
-
-					case VMState::Running:
-						VMManager::Execute();
-						break;
-
-					case VMState::Resetting:
-						VMManager::Reset();
-						break;
-
-					case VMState::Stopping:
-						WinRTHost::ProcessEventQueue();
-						return;
-
-					default:
-						break;
-				}
-			}
-			else
-			{
-				WinRTHost::ProcessEventQueue();
-				InputManager::PollSources();
-			}
-
+			WinRTHost::ProcessEventQueue();
 			Sleep(1);
 		}
+
+		s_emuthread.Join();
 
 		if (!m_launchOnExit.empty())
 		{
