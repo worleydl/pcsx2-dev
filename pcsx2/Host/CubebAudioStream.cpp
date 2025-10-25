@@ -121,8 +121,7 @@ bool CubebAudioStream::Initialize(const char* driver_name, const char* device_na
 {
 	cubeb_set_log_callback(CUBEB_LOG_NORMAL, LogCallback);
 
-// UWP TODO: Might need !_UWP cond here
-#ifdef _WIN32
+#if _WIN32 && !_UWP
 	const HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr))
 	{
@@ -269,7 +268,7 @@ bool CubebAudioStream::Initialize(const char* driver_name, const char* device_na
 		return false;
 	}
 
-#ifdef _WIN32
+#if _WIN32 && !_UWP
 	m_coUninit = std::move(uninit);
 #endif
 	return true;
