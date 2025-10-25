@@ -7497,8 +7497,11 @@ __ri void GSRendererHW::DrawPrims(GSTextureCache::Target* rt, GSTextureCache::Ta
 			}
 			else if (features.primitive_id)
 			{
+// PRIMID is known to have issues on xbox so keep it disabled
+#ifndef _UWP
 				GL_PERF("DATE: Accurate with alpha %d-%d", GetAlphaMinMax().min, GetAlphaMinMax().max);
 				DATE_PRIMID = true;
+#endif
 			}
 			else if (features.texture_barrier)
 			{
