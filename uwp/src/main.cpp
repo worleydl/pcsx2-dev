@@ -83,6 +83,14 @@ static std::mutex m_events_mtx;
 
 static Threading::Thread s_emuthread;
 
+// Taken from pcsx2-qt impl
+static constexpr const ImWchar s_base_latin_range[] = {
+	0x0020, 0x00FF, // Basic Latin + Latin Supplement
+};
+static constexpr const ImWchar s_central_european_ranges[] = {
+	0x0100, 0x017F, // Central European diacritics
+};
+
 namespace WinRTHost
 {
 	static bool InitializeConfig();
@@ -159,7 +167,13 @@ bool WinRTHost::InitializeConfig()
 	if (!EmuFolders::SetResourcesDirectory() || !EmuFolders::SetDataDirectory(nullptr))
 		return false;
 
-	ImGuiManager::SetFontPath(Path::Combine(EmuFolders::Resources, "fonts" FS_OSPATH_SEPARATOR_STR "Roboto-Regular.ttf"));
+	// Glyph range code taken from pcsx2-qt impl (may need to bring more over)
+	std::vector<ImWchar> glyph_ranges;
+	glyph_ranges.insert(glyph_ranges.begin(), std::begin(s_base_latin_range), std::end(s_base_latin_range));
+	glyph_ranges.push_back(0);
+	glyph_ranges.push_back(0);
+
+	ImGuiManager::SetFontPathAndRange(Path::Combine(EmuFolders::Resources, "fonts" FS_OSPATH_SEPARATOR_STR "Roboto-Regular.ttf"), glyph_ranges);
 
 	const std::string path(Path::Combine(EmuFolders::Settings, "PCSX2.ini"));
 	Console.WriteLn("Loading config from %s.", path.c_str());
@@ -392,6 +406,11 @@ void Host::OnVMPaused()
 
 void Host::OnVMResumed()
 {
+}
+
+void Host::OnCreateMemoryCardOpenRequested()
+{
+
 }
 
 void Host::OnGameChanged(const std::string& title, const std::string& elf_override, const std::string& disc_path,
