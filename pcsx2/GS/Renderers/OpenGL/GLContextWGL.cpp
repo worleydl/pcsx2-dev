@@ -7,6 +7,7 @@
 #include "common/Console.h"
 #include "common/Error.h"
 #include "common/ScopedGuard.h"
+#include "Host.h"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wmicrosoft-cast"
@@ -50,7 +51,11 @@ GLContextWGL::GLContextWGL(const WindowInfo& wi)
 GLContextWGL::~GLContextWGL()
 {
 	if (wglGetCurrentContext() == m_rc)
+#ifndef _UWP
 		wglMakeCurrent(m_dc, nullptr);
+#else
+		Host::RunOnCPUThread([this] { wglMakeCurrent(m_dc, nullptr); }, true);
+#endif
 
 	if (m_rc)
 		wglDeleteContext(m_rc);
@@ -151,11 +156,24 @@ bool GLContextWGL::IsCurrent()
 
 bool GLContextWGL::MakeCurrent()
 {
+#ifndef _UWP
 	if (!wglMakeCurrent(m_dc, m_rc))
 	{
 		Console.ErrorFmt("wglMakeCurrent() failed: {}", GetLastError());
 		return false;
 	}
+#else
+	bool async_res;
+	Host::RunOnCPUThread([this, &async_res] {
+		async_res = wglMakeCurrent(m_dc, m_rc);
+	}, true);
+
+	if (!async_res)
+	{
+		Console.ErrorFmt("wglMakeCurrent() failed: {}", GetLastError());
+		return false;
+	}
+#endif
 
 	return true;
 }
