@@ -376,7 +376,7 @@ void Host::OnVMStarted()
 		});
 
 		MTGS::RunOnGSThread([]() {
-			Sleep(1000); // Not sure if needed but it works, feel free to improve
+			//Sleep(1000); // Not sure if needed but it works, feel free to improve
 			MTGS::SetVSyncMode(GSVSyncMode::Mailbox, VMManager::ShouldAllowPresentThrottle());
 		});
 	}
