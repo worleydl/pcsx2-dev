@@ -77,6 +77,10 @@ std::atomic<bool> b_gamescan_active = false;
 static std::condition_variable m_blocking_cv;
 static std::mutex m_blocking_events_mtx;
 
+static std::deque<std::function<void()>> m_event_queue;
+static std::mutex m_events_mtx;
+
+
 static Threading::Thread s_emuthread;
 
 namespace WinRTHost
@@ -84,7 +88,8 @@ namespace WinRTHost
 	static bool InitializeConfig();
 	static std::optional<WindowInfo> GetPlatformWindowInfo();
 
-	void ProcessEvents();
+	void ProcessCPUEvents();
+	void RunOnASTAThread(std::function<void()> func, bool blocking = false);
 } // namespace WinRTHost
 
 static std::unique_ptr<INISettingsInterface> s_settings_interface;
@@ -118,6 +123,7 @@ void EmuThreadLoop()
 
 				case VMState::Paused:
 					InputManager::PollSources();
+					WinRTHost::ProcessCPUEvents();
 					break;
 
 				case VMState::Running:
@@ -129,6 +135,7 @@ void EmuThreadLoop()
 					break;
 
 				case VMState::Stopping:
+					WinRTHost::ProcessCPUEvents();
 					return;
 
 				default:
@@ -138,6 +145,7 @@ void EmuThreadLoop()
 		else
 		{
 			InputManager::PollSources();
+			WinRTHost::ProcessCPUEvents();
 		}
 
 		Sleep(1);
@@ -174,6 +182,45 @@ bool WinRTHost::InitializeConfig()
 
 	VMManager::Internal::LoadStartupSettings();
 	return true;
+}
+
+// Emuthread events, rendering will go in dispatcher queue
+void WinRTHost::ProcessCPUEvents()
+{
+	if (!m_event_queue.empty())
+	{
+		std::unique_lock lk(m_events_mtx);
+		while (!m_event_queue.empty())
+		{
+			m_event_queue.front()();
+			m_event_queue.pop_front();
+		}
+	}
+}
+
+void WinRTHost::RunOnASTAThread(std::function<void()> func, bool blocking /* = false */)
+{
+	if (blocking)
+	{
+		bool finished = false;
+		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func, &finished]() {
+			func();
+			{
+				std::unique_lock<std::mutex> block(m_blocking_events_mtx);
+				finished = true;
+				m_blocking_cv.notify_one();
+			}
+		});
+
+		std::unique_lock<std::mutex> block(m_blocking_events_mtx);
+		m_blocking_cv.wait(block, [&finished] { return finished; });
+	}
+	// async
+	else
+	{
+		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, func);
+	}
+
 }
 
 void Host::CommitBaseSettingChanges()
@@ -370,14 +417,11 @@ void Host::OnSaveStateSaved(const std::string_view filename)
 
 void Host::RunOnCPUThread(std::function<void()> func, bool blocking /* = false */)
 {
-	// HACK: Time out the block until I figure out how to address deadlocks on shutdown
-	const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(1000);
-
 	if (blocking)
 	{
-		//std::unique_lock<std::mutex> lock(m_events_mtx);
+		std::unique_lock<std::mutex> lock(m_events_mtx);
 		bool finished = false;
-		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [func, &finished]() {
+		m_event_queue.push_back([func, &finished]() {
 			func();
 			{
 				std::unique_lock<std::mutex> block(m_blocking_events_mtx);
@@ -385,14 +429,16 @@ void Host::RunOnCPUThread(std::function<void()> func, bool blocking /* = false *
 			}
 			m_blocking_cv.notify_one();
 		});
+		lock.unlock();
 
 		std::unique_lock<std::mutex> block(m_blocking_events_mtx);
-		m_blocking_cv.wait_until(block, timeout, [&finished] { return finished; });
+		m_blocking_cv.wait(block, [&finished] { return finished; });
 	}
 	// async
 	else
 	{
-		s_corewind->Dispatcher().RunAsync(CoreDispatcherPriority::Normal, func);
+		std::unique_lock<std::mutex> lock(m_events_mtx);
+		m_event_queue.push_back(func);
 	}
 }
 
@@ -526,8 +572,7 @@ std::optional<WindowInfo> WinRTHost::GetPlatformWindowInfo()
 
 void Host::PumpMessagesOnCPUThread()
 {
-	// TODO: Not sure if we need this if the main thread is dedicated to events only
-	//WinRTHost::ProcessEventQueue();
+	WinRTHost::ProcessCPUEvents();
 }
 
 s32 Host::Internal::GetTranslatedStringImpl(
