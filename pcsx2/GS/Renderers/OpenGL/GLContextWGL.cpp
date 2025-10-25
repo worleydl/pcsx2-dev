@@ -16,6 +16,11 @@
 #ifdef _UWP
 typedef BOOL(WINAPI* PFN_wglSwapBuffers)(HDC);
 PFN_wglSwapBuffers mesa_wglSwapBuffers = nullptr;
+
+namespace WinRTHost
+{
+	extern void RunOnASTAThread(std::function<void()> func, bool blocking = false);
+}
 #endif
 
 static void* GetProcAddressCallback(const char* name)
@@ -54,7 +59,7 @@ GLContextWGL::~GLContextWGL()
 #ifndef _UWP
 		wglMakeCurrent(m_dc, nullptr);
 #else
-		Host::RunOnCPUThread([this] { wglMakeCurrent(m_dc, nullptr); }, true);
+		WinRTHost::RunOnASTAThread([this] { wglMakeCurrent(m_dc, nullptr); }, true);
 #endif
 
 	if (m_rc)
@@ -164,7 +169,7 @@ bool GLContextWGL::MakeCurrent()
 	}
 #else
 	bool async_res;
-	Host::RunOnCPUThread([this, &async_res] {
+	WinRTHost::RunOnASTAThread([this, &async_res] {
 		async_res = wglMakeCurrent(m_dc, m_rc);
 	}, true);
 
