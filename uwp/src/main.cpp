@@ -320,7 +320,19 @@ void Host::OnVMStarting()
 
 void Host::OnVMStarted()
 {
-	MTGS::UpdateDisplayWindow();
+	if (VMManager::GetEffectiveVSyncMode() == GSVSyncMode::Mailbox)
+	{
+		// Very hacky way of simulating a on->off->on toggle for mailbox timings
+		// Xbox UWP will run extremely smooth with mailbox timings but only after a brief brush with FIFO
+		MTGS::RunOnGSThread([]() {
+			MTGS::SetVSyncMode(GSVSyncMode::FIFO, VMManager::ShouldAllowPresentThrottle());
+		});
+
+		MTGS::RunOnGSThread([]() {
+			Sleep(1000); // Not sure if needed but it works, feel free to improve
+			MTGS::SetVSyncMode(GSVSyncMode::Mailbox, VMManager::ShouldAllowPresentThrottle());
+		});
+	}
 }
 
 void Host::OnVMDestroyed()
