@@ -358,6 +358,9 @@ void Host::OnSaveStateSaved(const std::string_view filename)
 
 void Host::RunOnCPUThread(std::function<void()> func, bool blocking /* = false */)
 {
+	// HACK: Time out the block until I figure out how to address deadlocks on shutdown
+	const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(1000);
+
 	if (blocking)
 	{
 		//std::unique_lock<std::mutex> lock(m_events_mtx);
@@ -372,7 +375,7 @@ void Host::RunOnCPUThread(std::function<void()> func, bool blocking /* = false *
 		});
 
 		std::unique_lock<std::mutex> block(m_blocking_events_mtx);
-		m_blocking_cv.wait(block, [&finished] { return finished; });
+		m_blocking_cv.wait_until(block, timeout, [&finished] { return finished; });
 	}
 	// async
 	else
