@@ -11,6 +11,7 @@
 #include "GS/Renderers/DX12/D3D12ShaderCache.h"
 #include "Host.h"
 #include "ShaderCacheVersion.h"
+#include "VMManager.h"
 
 #include "common/Console.h"
 #include "common/BitUtils.h"
@@ -909,6 +910,13 @@ bool GSDevice12::CreateSwapChain()
 	Console.WriteLn("Creating a %dx%d winrt swap chain", swap_chain_desc.Width, swap_chain_desc.Height);
 	hr = m_dxgi_factory->CreateSwapChainForCoreWindow(
 		m_command_queue.get(), static_cast<::IUnknown*>(m_window_info.surface_handle), &swap_chain_desc, nullptr, m_swap_chain.put());
+#endif
+
+#ifdef _UWP
+	// Seems to maybe be a useful hint
+	ComPtr<IDXGISwapChain2> swap2;
+	m_swap_chain->QueryInterface(IID_PPV_ARGS(&swap2));
+	hr = swap2->SetMaximumFrameLatency(std::max(1, static_cast<int>(VMManager::GetEffectiveVSyncMode())));
 #endif
 
 	if (!CreateSwapChainRTV())
