@@ -684,12 +684,12 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		{
 			WGI::RawGameController::RawGameControllerAdded(
 				[](auto&&, const WGI::RawGameController raw_game_controller) {
-					InputManager::ReloadDevices();
+					Host::RunOnCPUThread(InputManager::ReloadDevices);
 				});
 
 			WGI::RawGameController::RawGameControllerRemoved(
 				[](auto&&, const WGI::RawGameController raw_game_controller) {
-					InputManager::ReloadDevices();
+					Host::RunOnCPUThread(InputManager::ReloadDevices);
 				});
 		}
 		catch (winrt::hresult_error)
