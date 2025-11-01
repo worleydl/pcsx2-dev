@@ -1265,7 +1265,7 @@ void GSDevice11::CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r,
 	}
 	if (sTex->GetFormat() == dTex->GetFormat())
 	{
-		if (EmuConfig.HDRRendering && sTex->GetFormat() == GSTexture::Format::Color)
+		if (EmuConfig.HDRRendering > HDRRenderType::Off && sTex->GetFormat() == GSTexture::Format::Color)
 		{
 #if OLD_HDR
 			pxAssertMsg((sTex->GetType() == GSTexture::Type::RenderTarget || sTex->GetType() == GSTexture::Type::RWTexture) == (dTex->GetType() == GSTexture::Type::RenderTarget || dTex->GetType() == GSTexture::Type::RWTexture), "CopyRect Source and Target are of different types.");

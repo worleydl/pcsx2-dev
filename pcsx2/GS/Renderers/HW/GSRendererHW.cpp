@@ -6998,6 +6998,8 @@ __ri void GSRendererHW::HandleTextureHazards(const GSTextureCache::Target* rt, c
 		return;
 	}
 
+	// [hdr rebase] Missing scaled_copy_range/scaled_copy_dst_offset/etc, restore if needed
+	/*
 	// CopyRect() might crash if the source area reads out of bounds or the target area writes out of bounds, so clamp it upfront (it's unclear why we get in this situation in the first place)
 	GSVector4i clamped_copy_range = scaled_copy_range;
 	clamped_copy_range = clamped_copy_range.rintersect(GSVector4i(0, 0, src_target->m_texture->GetWidth(), src_target->m_texture->GetHeight()));
@@ -7006,6 +7008,7 @@ __ri void GSRendererHW::HandleTextureHazards(const GSTextureCache::Target* rt, c
 	//pxAssert(clamped_copy_range.x >= 0 && clamped_copy_range.z <= src_copy->GetWidth() && clamped_copy_range.y >= 0 && clamped_copy_range.w <= src_copy->GetHeight());
 	clamped_copy_range = clamped_copy_range.rintersect(GSVector4i(0, 0, src_copy->GetWidth(), src_copy->GetHeight()));
 	clamped_copy_range = clamped_copy_range - clamped_copy_range.xyxy() + scaled_copy_range.xyxy();
+	*/
 
 	if (m_downscale_source)
 	{
@@ -7038,8 +7041,9 @@ __ri void GSRendererHW::HandleTextureHazards(const GSTextureCache::Target* rt, c
 	}
 	else if (src_target->m_texture->GetFormat() != src_copy->GetFormat())
 	{
-		const GSVector4 src_rect = GSVector4(clamped_copy_range) / GSVector4(src_target->m_texture->GetSize()).xyxy();
-		const GSVector4 dst_rect = GSVector4(clamped_copy_range - clamped_copy_range.xyxy() + GSVector4i(scaled_copy_dst_offset).xyxy());
+		// [hdr rebase] These need to go back to clamped values if block above is restored
+		const GSVector4 src_rect = GSVector4(copy_range) / GSVector4(src_target->m_texture->GetSize()).xyxy();
+		const GSVector4 dst_rect = GSVector4(copy_range - copy_range.xyxy() + GSVector4i(copy_dst_offset).xyxy());
 		g_gs_device->StretchRect(src_target->m_texture, src_rect, src_copy.get(), dst_rect, ShaderConvert::COPY, false);
 	}
 	else

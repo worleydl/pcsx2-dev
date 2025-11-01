@@ -249,7 +249,7 @@ void GSDownloadTexture11::CopyFromTexture(
 	// DX11 doesn't support partial depth copy so we need to
 	// either pass a nullptr D3D11_BOX for a full depth copy or use CopyResource instead.
 	// Optimization: Use CopyResource for depth copies, it's faster than CopySubresourceRegion.
-	if (EmuConfig.HDRRendering && stex->GetFormat() == GSTexture::Format::Color)
+	if (EmuConfig.HDRRendering > HDRRenderType::Off && stex->GetFormat() == GSTexture::Format::Color)
 	{
 #if OLD_HDR
 		pxAssertMsg(stex->GetType() != GSTexture::Type::RenderTarget && stex->GetType() != GSTexture::Type::RWTexture, "CopyFromTexture unsupported format.");
