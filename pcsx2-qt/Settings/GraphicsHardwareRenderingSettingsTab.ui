@@ -106,7 +106,7 @@
      </item>
      <item>
       <property name="text">
-       <string>Bilinear (PS2)</string>
+       <string>Bilinear (PS2) (Default)</string>
       </property>
      </item>
      <item>
@@ -216,6 +216,13 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item row="8" column="0">
+    <widget class="QCheckBox" name="hdr">
+     <property name="text">
+      <string>HDR</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
