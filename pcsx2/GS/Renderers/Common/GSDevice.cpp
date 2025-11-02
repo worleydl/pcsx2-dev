@@ -223,8 +223,8 @@ GSDevice::GSDevice()
 #else
 	// 64bit backbuffer is too intense for some games, tonemapped 8bit color still looks great
 	// todo: make optional (some games run fine with the 64bit backbuffeR), experiment more after rebase
-	m_emulation_hw_rt_texture_format = GSTexture::Format::ColorHDR;
-	m_postprocess_texture_format = GSTexture::Format::ColorHDR;
+	m_emulation_hw_rt_texture_format = GSTexture::Format::Color;
+	m_postprocess_texture_format = GSTexture::Format::ColorHQ;
 #endif
 
 #ifdef PCSX2_DEVBUILD
