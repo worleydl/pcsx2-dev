@@ -88,6 +88,7 @@ namespace WinRTHost
 	static bool InitializeConfig();
 	static std::optional<WindowInfo> GetPlatformWindowInfo();
 
+	void EnableHDR();
 	void ProcessCPUEvents();
 	void RunOnASTAThread(std::function<void()> func, bool blocking = false);
 } // namespace WinRTHost
@@ -149,6 +150,23 @@ void EmuThreadLoop()
 		}
 
 		Sleep(1);
+	}
+}
+
+void WinRTHost::EnableHDR()
+{
+	auto hdi = HdmiDisplayInformation::GetForCurrentView();
+	// HDR Setup
+	auto modes = hdi.GetSupportedDisplayModes();
+	for (unsigned i = 0; i < modes.Size(); i++)
+	{
+		auto mode = modes.GetAt(i);
+		if (mode.ColorSpace() == HdmiDisplayColorSpace::BT2020 && mode.RefreshRate() >= 59)
+		{
+			// TODO: Optionally enable dolbyvision (how to check for support? HdmiDisplayHdrOption::DolbyVisionLowLatency)
+			hdi.RequestSetCurrentDisplayModeAsync(mode, HdmiDisplayHdrOption::Eotf2084);
+			break;
+		}
 	}
 }
 
@@ -723,6 +741,8 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		CoreWindow window = CoreWindow::GetForCurrentThread();
 		window.Activate();
 		s_corewind = &window;
+
+		WinRTHost::EnableHDR();
 
 		auto navigation = winrt::Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 		navigation.BackRequested(

@@ -34,6 +34,13 @@
 static u32 s_debug_scope_depth = 0;
 #endif
 
+#ifdef _UWP
+namespace WinRTHost
+{
+	extern void RunOnASTAThread(std::function<void()> func, bool blocking = false);
+}
+#endif
+
 static bool IsDATMConvertShader(ShaderConvert i)
 {
 	return (i == ShaderConvert::DATM_0 || i == ShaderConvert::DATM_1 || i == ShaderConvert::DATM_0_RTA_CORRECTION || i == ShaderConvert::DATM_1_RTA_CORRECTION);
@@ -701,7 +708,12 @@ bool GSDevice12::Create(GSVSyncMode vsync_mode, bool allow_present_throttle)
 
 	m_name = D3D::GetAdapterName(m_adapter.get());
 
+#ifndef _UWP
 	m_swap_chain_format = EmuConfig.HDROutput ? swap_chain_hdr_format : swap_chain_sdr_format;
+#else
+	// Xbox UWP only supports a HDR10 swapchain (no direct 64bit but you can render that to a backbuffer and blit)
+	m_swap_chain_format = swap_chain_sdr_format;
+#endif
 	// For now these are expected to be identical, but it's probably not necessary
 	pxAssert(m_swap_chain_format == GetNativeFormat(m_postprocess_texture_format));
 
@@ -922,7 +934,17 @@ bool GSDevice12::CreateSwapChain()
 	ComPtr<IDXGISwapChain2> swap2;
 	m_swap_chain->QueryInterface(IID_PPV_ARGS(&swap2));
 	hr = swap2->SetMaximumFrameLatency(std::max(1, static_cast<int>(VMManager::GetEffectiveVSyncMode())));
+
+	// HDR gets finnicky about being set multiple times unless it's on ASTA
+	WinRTHost::RunOnASTAThread([this] {
+		ComPtr<IDXGISwapChain4> swap_chain4;
+		m_swap_chain->QueryInterface(IID_PPV_ARGS(&swap_chain4));
+		swap_chain4->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+	},
+		true);
 #endif
+
+
 
 	if (!CreateSwapChainRTV())
 	{

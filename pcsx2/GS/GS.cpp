@@ -111,8 +111,9 @@ static bool OpenGSDevice(GSRendererType renderer, bool clear_state_on_fail, bool
 
 	// These features are only supported by some renderers and on some HW (e.g. HDR displays),
 	// so they need a live state.
-	EmuConfig.HDRRendering = GSConfig.HDRRendering;
-	EmuConfig.HDROutput = GSConfig.HDROutput;
+	// DLW: Forced to unsafe because that looks correct on xbox
+	EmuConfig.HDRRendering = HDRRenderType::Unsafe; //GSConfig.HDRRendering;
+	EmuConfig.HDROutput = true; //GSConfig.HDROutput;
 
 	// Force disable HDR on unsupported (or partially supported) renderers.
 	if (new_api == RenderAPI::OpenGL || new_api == RenderAPI::Metal)

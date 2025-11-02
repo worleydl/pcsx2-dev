@@ -18,6 +18,7 @@ cbuffer cb0 : register(b0)
 {
 	float4 correction;
 	float4 adjustment;
+	float4 initial;
 };
 
 // SMPTE 170M - BT.601 (NTSC-M) -> BT.709
@@ -47,6 +48,25 @@ static const float3x3 BT2020_2_BT709 = float3x3(
 	1.66049098968505859375f, -0.58764111995697021484375f, -0.072849862277507781982421875f,
 	-0.12455047667026519775390625f, 1.13289988040924072265625f, -0.0083494223654270172119140625f,
 	-0.01815076358616352081298828125f, -0.100578896701335906982421875f, 1.11872971057891845703125f);
+
+// PQ (ST.2084) encoding constants
+static const float  PQ_m1 = 1305.0  /  8192.0;
+static const float  PQ_m2 = 2523.0  /  32.0;
+static const float  PQ_c1 = 107.0   /  128.0;
+static const float  PQ_c2 = 2413.0  /  128.0;
+static const float  PQ_c3 = 2392.0  /  128.0;
+
+// Convert linear light (in nits) to PQ-encoded signal [0-1]
+float3 LinearToPQ(float3 linearColor, float maxNits)
+{
+       // Normalize to maxNits
+       float3 L = saturate(linearColor / maxNits);
+
+       float3 num = PQ_c1 + PQ_c2 * pow(L, PQ_m1);
+       float3 den = 1.0 + PQ_c3 * pow(L, PQ_m1);
+
+       return pow(num / den, PQ_m2);
+}
 
 // Applies exponential ("Photographic") luminance/luma compression.
 float RangeCompress(float X)
@@ -223,6 +243,9 @@ float4 ps_main(PS_INPUT input) : SV_Target0
 	
 #if PS_HDR_OUTPUT
 	// Leave as linear, for scRGB HDR
+	// todo: add xbox macro
+	// todo: any need for initial.x (brightness)?
+	c.rgb = LinearToPQ(c.rgb, initial.y);
 #else
 	// Convert to Gamma 2.2 (not sRGB)
 	c.rgb = pow(max(c.rgb, 0.0), 1.0 / 2.2);

@@ -109,12 +109,12 @@ add_subdirectory(3rdparty/cubeb EXCLUDE_FROM_ALL)
 disable_compiler_warnings_for_target(cubeb)
 disable_compiler_warnings_for_target(speex)
 
-# Find the Qt components that we need.
-if(ENABLE_QT_UI)
-	find_package(Qt6 6.7.3 COMPONENTS CoreTools Core GuiTools Gui WidgetsTools Widgets LinguistTools REQUIRED)
-endif()
-
 if (NOT UWP_BUILD)
+	# Find the Qt components that we need.
+	if(ENABLE_QT_UI)
+		find_package(Qt6 6.7.3 COMPONENTS CoreTools Core GuiTools Gui WidgetsTools Widgets LinguistTools REQUIRED)
+	endif()
+
 	if (Qt6_VERSION VERSION_GREATER_EQUAL 6.10.0)
 		find_package(Qt6 COMPONENTS CorePrivate GuiPrivate WidgetsPrivate REQUIRED)
 	endif()

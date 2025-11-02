@@ -250,8 +250,9 @@ struct alignas(16) ColorCorrectConstantBuffer
 {
 	GSVector4 correction;
 	GSVector4 adjustment;
+	GSVector4 initial;
 };
-static_assert(sizeof(ColorCorrectConstantBuffer) == 32, "ColorCorrectConstantBuffer is correct size");
+static_assert(sizeof(ColorCorrectConstantBuffer) == 48, "ColorCorrectConstantBuffer is correct size");
 
 enum HWBlendFlags
 {

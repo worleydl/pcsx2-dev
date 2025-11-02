@@ -48,7 +48,7 @@ add_subdirectory(common)
 # make pcsx2
 add_subdirectory(pcsx2)
 
-if(ENABLE_QT_UI)
+if(ENABLE_QT_UI AND NOT UWP_BUILD)
 	add_subdirectory(pcsx2-qt)
 endif()
 

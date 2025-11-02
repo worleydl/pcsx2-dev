@@ -217,8 +217,15 @@ GSDevice::GSDevice()
 {
 	// Ideally the post process and emulation RTs formats would be split and we could have HDR on each of the two independently,
 	// though ultimately there's no much point in splitting them
+#ifndef _UWP
 	m_emulation_hw_rt_texture_format = (EmuConfig.HDRRendering > HDRRenderType::Off) ? GSTexture::Format::ColorHDR : GSTexture::Format::Color;
 	m_postprocess_texture_format = EmuConfig.HDROutput ? GSTexture::Format::ColorHDR : GSTexture::Format::ColorHQ;
+#else
+	// 64bit backbuffer is too intense for some games, tonemapped 8bit color still looks great
+	// todo: make optional (some games run fine with the 64bit backbuffeR), experiment more after rebase
+	m_emulation_hw_rt_texture_format = GSTexture::Format::ColorHDR;
+	m_postprocess_texture_format = GSTexture::Format::ColorHDR;
+#endif
 
 #ifdef PCSX2_DEVBUILD
 	s_texture_counts.fill(0);
@@ -882,6 +889,10 @@ void GSDevice::ColorCorrect()
 		cb.adjustment.x = (GSConfig.ShadeBoost ? static_cast<float>(GSConfig.ShadeBoost_Brightness) : 50.f) * (1.0f / 50.0f);
 		cb.adjustment.y = (GSConfig.ShadeBoost ? static_cast<float>(GSConfig.ShadeBoost_Contrast) : 50.f) * (1.0f / 50.0f);
 		cb.adjustment.z = (GSConfig.ShadeBoost ? static_cast<float>(GSConfig.ShadeBoost_Saturation) : 50.f) * (1.0f / 50.0f);
+
+		// Additional meta used by xbox for PQ encoding
+		cb.initial.x = GSConfig.HDR_BrightnessNits;
+		cb.initial.y = GSConfig.HDR_PeakBrightnessNits;
 
 		DoColorCorrect(m_current, m_target_tmp, cb);
 
