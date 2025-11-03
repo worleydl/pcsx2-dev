@@ -27,6 +27,13 @@
 
 // #define REPORT_LEAKED_OBJECTS 1
 
+#ifdef _UWP
+namespace WinRTHost
+{
+	extern void RunOnASTAThread(std::function<void()> func, bool blocking = false);
+}
+#endif
+
 static constexpr std::array<float, 4> s_present_clear_color = {};
 
 static bool SupportsTextureFormat(ID3D11Device* dev, DXGI_FORMAT format)
@@ -659,7 +666,12 @@ bool GSDevice11::CreateSwapChain()
 	if (m_window_info.type != WindowInfo::Type::Win32)
 		return false;
 
+#ifndef _UWP
 	const DXGI_FORMAT swap_chain_format = EmuConfig.HDROutput ? swap_chain_hdr_format : swap_chain_sdr_format;
+#else
+	// No direct 64bit buffer support on xbox
+	const DXGI_FORMAT swap_chain_format = swap_chain_sdr_format;
+#endif
 	// For now these are expected to be identical, but it's probably not necessary
 	pxAssert(swap_chain_format == GSTexture11::GetDXGIFormat(m_postprocess_texture_format));
 
@@ -783,6 +795,12 @@ bool GSDevice11::CreateSwapChain()
 #else
 	Console.WriteLn("Creating a %dx%d winrt swap chain", swap_chain_desc.Width, swap_chain_desc.Height);
 	hr = m_dxgi_factory->CreateSwapChainForCoreWindow(m_dev.get(), static_cast<::IUnknown*>(m_window_info.surface_handle), &swap_chain_desc, nullptr, m_swap_chain.put());
+
+	WinRTHost::RunOnASTAThread([this] {
+		wil::com_ptr_nothrow<IDXGISwapChain4> swap_chain4;
+		m_swap_chain->QueryInterface(&swap_chain4);
+		swap_chain4->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+	}, true);
 #endif
 
 	if (!CreateSwapChainRTV())

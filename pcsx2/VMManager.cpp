@@ -2693,6 +2693,7 @@ GSVSyncMode VMManager::GetEffectiveVSyncMode()
 	if (!EmuConfig.GS.VsyncEnable)
 		return GSVSyncMode::Disabled;
 
+	#ifndef _UWP
 	// If there's no VM, or we're using vsync for timing, then we always use double-buffered (blocking).
 	// Try to keep the same present mode whether we're running or not, since it'll avoid flicker.
 	const VMState state = GetState();
@@ -2702,6 +2703,7 @@ GSVSyncMode VMManager::GetEffectiveVSyncMode()
 	{
 		return GSVSyncMode::FIFO;
 	}
+	#endif
 
 	// For PAL games, we always want to triple buffer, because otherwise we'll be tearing.
 	// Or for when we aren't using sync-to-host-refresh, to avoid dropping frames.
